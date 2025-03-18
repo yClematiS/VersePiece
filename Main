@@ -249,7 +249,7 @@ local OnMob = MainTab:CreateToggle({
                             end
                         end
 
-                        if closestMob then
+                        if closestMob and closestDistance <= 150 then
                             local rootPart = closestMob:FindFirstChild("HumanoidRootPart")
                             if rootPart then
                                 hrp.CFrame = rootPart.CFrame * CFrame.new(0, 6, 0) * CFrame.Angles(math.rad(-90), 0, 0)
@@ -288,6 +288,7 @@ local OnMob = MainTab:CreateToggle({
         end
     end
 })
+
 
 local Mine = MainTab:CreateSection("Auto Mine Ore")
 Minning = false
