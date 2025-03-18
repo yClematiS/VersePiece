@@ -132,7 +132,6 @@ local killmobpercentDropdown = MainTab:CreateDropdown({
 
 local SetHealth = false
 local hitboxThread = nil
-
 local KillAura = MainTab:CreateToggle({
     Name = "Instant Kill",
     CurrentValue = false,
@@ -290,3 +289,52 @@ local OnMob = MainTab:CreateToggle({
     end
 })
 
+local Mine = MainTab:CreateSection("Auto Mine Ore")
+Minning = false
+local Minning = MainTab:CreateToggle({
+    Name = "Auto Mine Ore",
+    CurrentValue = false,
+    Flag = "AOre",
+    Callback = function(Value)
+        Minning = Value
+        local oreFolder = workspace.Main.Ore
+        local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+        local camera = game.Workspace.CurrentCamera
+        while Minning do
+            for _, ore in pairs(oreFolder:GetChildren()) do
+                if ore:IsA("Model") and ore.Name == "Ore" then
+                    local foundPrompt = false
+                    
+                    for _, obj in pairs(ore:GetDescendants()) do
+                        if obj:IsA("ProximityPrompt") and obj.Name == "{}" then
+                            if not obj.Enabled then
+                                foundPrompt = false
+                                break
+                            end
+                            
+                            humanoidRootPart.CFrame = ore.PrimaryPart.CFrame*CFrame.new(0,3,0)
+                            
+                            local orePosition = ore.PrimaryPart.Position
+                            local cameraOffset = Vector3.new(0, 5, 0)
+                            camera.CFrame = CFrame.new(orePosition + cameraOffset, orePosition)
+
+                            obj.RequiresLineOfSight = false
+
+                            wait(0.4)
+                            obj:InputHoldBegin()
+                            foundPrompt = true
+                            break
+                        end
+                    end
+                    
+                    if foundPrompt then
+                        break
+                    end
+                end
+            end
+            wait(1)
+        end
+    end
+})
