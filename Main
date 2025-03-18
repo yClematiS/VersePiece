@@ -188,8 +188,11 @@ local KillAura = MainTab:CreateToggle({
                                     rootPart.Anchored = true
                                 end
                                 if humanoid.Health < humanoid.MaxHealth * defaultkillmobpercent then
-                                    rootPart.Anchored = false
-                                    humanoid.Health = 0
+                                    for i = 1, 3 do
+                                        rootPart.Anchored = false
+                                        humanoid.Health = 0
+                                        rootPart.Anchored = false
+                                    end                                    
                                 end
                             end
                         end
