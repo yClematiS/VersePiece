@@ -338,3 +338,98 @@ local Minning = MainTab:CreateToggle({
         end
     end
 })
+
+local AutoClick = MainTab:CreateSection("Auto Click")
+
+local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+
+local player = Players.LocalPlayer
+local screenGui = CoreGui:FindFirstChild("CrosshairGui")
+
+if not screenGui then
+    screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "CrosshairGui"
+    screenGui.Parent = CoreGui
+
+    local crosshair = Instance.new("ImageLabel")
+    crosshair.Size = UDim2.new(0, 45, 0, 45)
+    crosshair.Position = UDim2.new(0.5, -5, 0.5, 260)
+    crosshair.BackgroundTransparency = 1
+    crosshair.Image = "rbxassetid://103448393060927"
+    crosshair.Parent = screenGui
+    
+    local dragging, dragInput, dragStart, startPos
+
+    local function Update(input)
+        local delta = input.Position - dragStart
+        crosshair.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+    end
+
+    local function StartDrag(input)
+        dragging = true
+        dragStart = input.Position
+        startPos = crosshair.Position
+    end
+
+    local function StopDrag()
+        dragging = false
+    end
+
+    crosshair.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            StartDrag(input)
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    StopDrag()
+                end
+            end)
+        end
+    end)
+
+    crosshair.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            Update(input)
+        end
+    end)
+end
+
+local function endClick()
+    local crosshair = screenGui:FindFirstChildOfClass("ImageLabel")
+    if crosshair then
+        local midX, midY = crosshair.AbsolutePosition.X + 10, crosshair.AbsolutePosition.Y + 10
+        VirtualInputManager:SendMouseButtonEvent(midX, midY, 0, true, game, 0)
+        wait(0.1)
+        VirtualInputManager:SendMouseButtonEvent(midX, midY, 0, false, game, 0)
+    end
+end
+
+Clicking = false
+local Clicking = MainTab:CreateToggle({
+    Name = "Auto Click",
+    CurrentValue = false,
+    Flag = "Clicking",
+    Callback = function(Value)
+        Clicking = Value
+        if Clicking then
+            while Clicking do
+                endClick()
+                wait(0.1)
+            end
+        end
+    end
+})
