@@ -482,9 +482,10 @@ local GoToMob = MainTab:CreateToggle({
     end
 })
 
-local Mine = MainTab:CreateSection("Auto Mine Ore")
+local MineTab = MainWindow:CreateTab("Mining")
+local Mine = MineTab:CreateSection("Auto Mine Ore")
 local Minning = false
-local Minning = MainTab:CreateToggle({
+local Minning = MineTab:CreateToggle({
     Name = "Auto Mine Ore",
     CurrentValue = false,
     Flag = "AOre",
@@ -549,7 +550,8 @@ local Minning = MainTab:CreateToggle({
     end
 })
 
-local AutoClick = MainTab:CreateSection("Auto Click")
+local AutoCTab = MainWindow:CreateTab("Auto Clicker")
+local AutoClick = AutoCTab:CreateSection("Auto Click")
 
 local UserInputService = game:GetService("UserInputService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
@@ -636,7 +638,7 @@ end
 
 local Clicking = false
 local clickThread = nil
-Clicking = MainTab:CreateToggle({
+Clicking = AutoCTab:CreateToggle({
     Name = "Auto Click",
     CurrentValue = false,
     Flag = "Clicking",
