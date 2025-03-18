@@ -144,9 +144,11 @@ local KillAura = MainTab:CreateToggle({
                     task.wait(0.1)
                     local mobFolder = workspace:FindFirstChild("Main")
                     local me = game.Players.LocalPlayer.Character
-                    if not me then
-                        repeat task.wait(1) until game.Players.LocalPlayer.Character
-                        me = game.Players.LocalPlayer.Character
+
+                    local player = game.Players.LocalPlayer
+                    local character = player.Character or player.CharacterAdded:Wait()
+                    if not character or not character:FindFirstChild("HumanoidRootPart") then
+                        return
                     end
                     
                     local hrp = me:FindFirstChild("HumanoidRootPart")
@@ -186,8 +188,8 @@ local KillAura = MainTab:CreateToggle({
                                     rootPart.Anchored = true
                                 end
                                 if humanoid.Health < humanoid.MaxHealth * defaultkillmobpercent then
-                                    humanoid.Health = 0
                                     rootPart.Anchored = false
+                                    humanoid.Health = 0
                                 end
                             end
                         end
@@ -211,21 +213,34 @@ local OnMob = MainTab:CreateToggle({
         OnMob = Value
         if OnMob and not Sittingsss then
             Sittingsss = task.spawn(function()
+                local bodyVelocity
                 while OnMob do
                     task.wait(0.1)
                     local mobFolder = workspace:FindFirstChild("Main")
-                    local me = game.Players.LocalPlayer.Character
-                    if not me then
-                        repeat task.wait(1) until game.Players.LocalPlayer.Character
-                        me = game.Players.LocalPlayer.Character
+                    local player = game.Players.LocalPlayer
+                    local character = player.Character or player.CharacterAdded:Wait()
+
+                    if not character or not character:FindFirstChild("HumanoidRootPart") then
+                        break
                     end
                     
-                    local hrp = me:FindFirstChild("HumanoidRootPart")
-                    local humanoid = me:FindFirstChildOfClass("Humanoid")
-                    if not hrp or not humanoid then break end
+                    local humanoid = character:FindFirstChildOfClass("Humanoid")
+                    if not humanoid or humanoid.Health <= 0 then
+                        if bodyVelocity then
+                            bodyVelocity:Destroy()
+                        end
+                        break
+                    end
+
+                    local hrp = character:FindFirstChild("HumanoidRootPart")
+                    if not hrp then break end
 
                     humanoid.PlatformStand = true
-                    local bodyVelocity = Instance.new("BodyVelocity")
+
+                    if bodyVelocity then
+                        bodyVelocity:Destroy()
+                    end
+                    bodyVelocity = Instance.new("BodyVelocity")
                     bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
                     bodyVelocity.Velocity = Vector3.new(0, 0, 0)
                     bodyVelocity.Parent = hrp
@@ -266,14 +281,24 @@ local OnMob = MainTab:CreateToggle({
                     end
                 end
 
-                if humanoid then
-                    humanoid.PlatformStand = false
-                    for _, obj in pairs(hrp:GetChildren()) do
-                        if obj:IsA("BodyVelocity") then
-                            obj:Destroy()
+                if character then
+                    local humanoid = character:FindFirstChildOfClass("Humanoid")
+                    if humanoid then
+                        humanoid.PlatformStand = false
+                    end
+                    local hrp = character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        if bodyVelocity then
+                            bodyVelocity:Destroy()
+                        end
+                        for _, obj in pairs(hrp:GetChildren()) do
+                            if obj:IsA("BodyVelocity") then
+                                obj:Destroy()
+                            end
                         end
                     end
                 end
+
                 Sittingsss = nil
             end)
         elseif not OnMob and Sittingsss then
@@ -307,6 +332,10 @@ local Minning = MainTab:CreateToggle({
         Minning = Value
         local oreFolder = workspace.Main.Ore
         local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        if not character or not character:FindFirstChild("HumanoidRootPart") then
+            return
+        end
 
         local character = player.Character or player.CharacterAdded:Wait()
         local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
@@ -448,10 +477,10 @@ local Clicking = MainTab:CreateToggle({
             local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
             while Clicking do
-                if not player.Character or not humanoidRootPart then
-                    repeat wait(1) until player.Character
-                    character = player.Character
-                    humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+                local player = game.Players.LocalPlayer
+                local character = player.Character or player.CharacterAdded:Wait()
+                if not character or not character:FindFirstChild("HumanoidRootPart") then
+                    return
                 end
                 endClick()
                 wait(0.1)
