@@ -144,7 +144,11 @@ local KillAura = MainTab:CreateToggle({
                     task.wait(0.1)
                     local mobFolder = workspace:FindFirstChild("Main")
                     local me = game.Players.LocalPlayer.Character
-                    if not me then break end
+                    if not me then
+                        repeat task.wait(1) until game.Players.LocalPlayer.Character
+                        me = game.Players.LocalPlayer.Character
+                    end
+                    
                     local hrp = me:FindFirstChild("HumanoidRootPart")
                     if not hrp then break end
                     if mobFolder then
@@ -197,7 +201,7 @@ local KillAura = MainTab:CreateToggle({
     end
 })
 
-OnMob = false
+local OnMob = false
 Sittingsss = nil
 local OnMob = MainTab:CreateToggle({
     Name = "Go to mob",
@@ -211,7 +215,11 @@ local OnMob = MainTab:CreateToggle({
                     task.wait(0.1)
                     local mobFolder = workspace:FindFirstChild("Main")
                     local me = game.Players.LocalPlayer.Character
-                    if not me then break end
+                    if not me then
+                        repeat task.wait(1) until game.Players.LocalPlayer.Character
+                        me = game.Players.LocalPlayer.Character
+                    end
+                    
                     local hrp = me:FindFirstChild("HumanoidRootPart")
                     local humanoid = me:FindFirstChildOfClass("Humanoid")
                     if not hrp or not humanoid then break end
@@ -289,9 +297,8 @@ local OnMob = MainTab:CreateToggle({
     end
 })
 
-
 local Mine = MainTab:CreateSection("Auto Mine Ore")
-Minning = false
+local Minning = false
 local Minning = MainTab:CreateToggle({
     Name = "Auto Mine Ore",
     CurrentValue = false,
@@ -300,10 +307,18 @@ local Minning = MainTab:CreateToggle({
         Minning = Value
         local oreFolder = workspace.Main.Ore
         local player = game.Players.LocalPlayer
+
         local character = player.Character or player.CharacterAdded:Wait()
         local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
         local camera = game.Workspace.CurrentCamera
+        
         while Minning do
+            if not player.Character then
+                repeat wait(1) until player.Character
+                character = player.Character
+                humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+            end
+
             for _, ore in pairs(oreFolder:GetChildren()) do
                 if ore:IsA("Model") and ore.Name == "Ore" then
                     local foundPrompt = false
@@ -315,7 +330,7 @@ local Minning = MainTab:CreateToggle({
                                 break
                             end
                             
-                            humanoidRootPart.CFrame = ore.PrimaryPart.CFrame*CFrame.new(0,3,0)
+                            humanoidRootPart.CFrame = ore.PrimaryPart.CFrame * CFrame.new(0, 3, 0)
                             
                             local orePosition = ore.PrimaryPart.Position
                             local cameraOffset = Vector3.new(0, 5, 0)
@@ -339,6 +354,7 @@ local Minning = MainTab:CreateToggle({
         end
     end
 })
+
 
 local AutoClick = MainTab:CreateSection("Auto Click")
 
@@ -427,7 +443,16 @@ local Clicking = MainTab:CreateToggle({
     Callback = function(Value)
         Clicking = Value
         if Clicking then
+            local player = game.Players.LocalPlayer
+            local character = player.Character or player.CharacterAdded:Wait()
+            local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
             while Clicking do
+                if not player.Character or not humanoidRootPart then
+                    repeat wait(1) until player.Character
+                    character = player.Character
+                    humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+                end
                 endClick()
                 wait(0.1)
             end
