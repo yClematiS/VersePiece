@@ -1,0 +1,271 @@
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:FindFirstChild("HumanoidRootPart")
+
+while not rootPart do
+    rootPart = character:FindFirstChild("HumanoidRootPart")
+    wait()
+end
+
+game:GetService("Players").LocalPlayer.Idled:connect(function()
+    game:GetService("VirtualUser"):CaptureController()
+    game:GetService("VirtualUser"):ClickButton2(Vector2.new())
+end)
+
+function getmaincode()
+    local characters = "QWERTYUIOPASDFGHJKLZXCVBNM"
+    local result = ""
+    for i = 1, 1 do
+        local randomIndex = math.random(2, #characters)
+        result = result .. string.sub(characters, randomIndex, randomIndex)
+    end
+    return result
+end
+
+function getcode()
+    local characters = "1234567890"
+    local result = ""
+    for i = 1, 5 do
+        local randomIndex = math.random(2, #characters)
+        result = result .. string.sub(characters, randomIndex, randomIndex)
+    end
+    return result
+end
+
+local function startTypingAnimation3()
+    local randomText1 = getmaincode()
+    local randomText2 = getcode()
+    local username = game.Players.LocalPlayer.Character.Name
+    random_name = " | Clematis Hub | " .. username .. " | Session : ( "..randomText1.."-"..randomText2.." ) "
+end
+spawn(startTypingAnimation3)
+
+local usernames = game.Players.LocalPlayer.Character.Name
+local pid = tostring(game.PlaceId)
+
+print("Loading Lib")
+_G.theme = "Amethyst"
+wait(0.2)
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+print("Ui Lib Loaded")
+wait(1)
+print("Loading Function")
+local MainWindow = Rayfield:CreateWindow({
+    Name = random_name or "Clematis Hub | Err Loading | Session : ( Error! )",
+    Icon = 0,
+    LoadingTitle = "Loading!",
+    LoadingSubtitle = "Script By Seaweed_hunter",
+    Theme = _G.theme,
+    DisableRayfieldPrompts = false,
+    DisableBuildWarnings = false,
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "ClematisHub",
+        FileName = usernames .. "_SavedConfig_" .. pid
+    },
+    Discord = {
+        Enabled = false,
+        Invite = "noinvitelink",
+        RememberJoins = true
+    },
+    KeySystem = false,
+    KeySettings = {
+        Title = "Key?",
+        Subtitle = "Key on Discord Server",
+        Note = "Get Key From Discord",
+        FileName = "Key",
+        SaveKey = true,
+        GrabKeyFromSite = false,
+        Key = {"NOOOO"}
+    }
+})
+
+local MainTab = MainWindow:CreateTab("Auto Farm")
+local InstantKill = MainTab:CreateSection("Kill Aura")
+
+killmobpercent = {
+    ["90%"] = 0.90,
+    ["75%"] = 0.75,
+    ["50%"] = 0.50,
+    ["25%"] = 0.25,
+    ["10%"] = 0.10,
+}
+defaultkillmobpercent = 0.90
+
+local killmobpercentDropdown = MainTab:CreateDropdown({
+    Name = "Kill Mob at %",
+    Options = {"90%", "75%", "50%", "25%", "10%"},
+    CurrentOption = "90%",
+    MultipleOptions = false,
+    Flag = "Inskillpercent",
+    Callback = function(Option)
+        local selected = type(Option) == "table" and Option[1] or Option
+        if killmobpercent[selected] then
+            defaultkillmobpercent = killmobpercent[selected]
+            print("[DEBUG] kill mob at percent set to:", defaultkillmobpercent)
+        else
+            print("[ERROR] Invalid kill percentage selected:", selected)
+        end
+    end,
+})
+
+local SetHealth = false
+local hitboxThread = nil
+
+local KillAura = MainTab:CreateToggle({
+    Name = "Instant Kill",
+    CurrentValue = false,
+    Flag = "Kill Aura",
+    Callback = function(Value)
+        SetHealth = Value
+        if SetHealth and not hitboxThread then
+            hitboxThread = task.spawn(function()
+                while SetHealth do
+                    task.wait(0.1)
+                    local mobFolder = workspace:FindFirstChild("Main")
+                    local me = game.Players.LocalPlayer.Character
+                    if not me then break end
+                    local hrp = me:FindFirstChild("HumanoidRootPart")
+                    if not hrp then break end
+                    if mobFolder then
+                        local plyRoot = hrp
+                        local closestMob = nil
+                        local closestDistance = math.huge
+
+                        for _, islandFolder in pairs(mobFolder:GetChildren()) do
+                            if islandFolder:IsA("Folder") then
+                                for _, mobGroupFolder in pairs(islandFolder:GetChildren()) do
+                                    if mobGroupFolder:IsA("Folder") then
+                                        for _, mob in pairs(mobGroupFolder:GetChildren()) do
+                                            local humanoid = mob:FindFirstChildOfClass("Humanoid")
+                                            local rootPart = mob:FindFirstChild("HumanoidRootPart")
+                                            local isMob = mob:FindFirstChild("Mob")
+
+                                            if humanoid and rootPart and isMob and isMob:IsA("BoolValue") and humanoid.Health > 0 then
+                                                local distance = (plyRoot.Position - rootPart.Position).Magnitude
+                                                if distance < closestDistance then
+                                                    closestDistance = distance
+                                                    closestMob = mob
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+
+                        if closestMob then
+                            local humanoid = closestMob:FindFirstChildOfClass("Humanoid")
+                            local rootPart = closestMob:FindFirstChild("HumanoidRootPart")
+                            if humanoid and rootPart and humanoid.Health > 0 then
+                                if humanoid.Health < humanoid.MaxHealth * 0.99 then
+                                    rootPart.Anchored = true
+                                end
+                                if humanoid.Health < humanoid.MaxHealth * defaultkillmobpercent then
+                                    humanoid.Health = 0
+                                    rootPart.Anchored = false
+                                end
+                            end
+                        end
+                    end
+                end
+                hitboxThread = nil
+            end)
+        elseif not SetHealth and hitboxThread then
+            hitboxThread = nil
+        end
+    end
+})
+
+OnMob = false
+Sittingsss = nil
+local OnMob = MainTab:CreateToggle({
+    Name = "Go to mob",
+    CurrentValue = false,
+    Flag = "OnMob",
+    Callback = function(Value)
+        OnMob = Value
+        if OnMob and not Sittingsss then
+            Sittingsss = task.spawn(function()
+                while OnMob do
+                    task.wait(0.1)
+                    local mobFolder = workspace:FindFirstChild("Main")
+                    local me = game.Players.LocalPlayer.Character
+                    if not me then break end
+                    local hrp = me:FindFirstChild("HumanoidRootPart")
+                    local humanoid = me:FindFirstChildOfClass("Humanoid")
+                    if not hrp or not humanoid then break end
+
+                    humanoid.PlatformStand = true
+                    local bodyVelocity = Instance.new("BodyVelocity")
+                    bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
+                    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                    bodyVelocity.Parent = hrp
+
+                    if mobFolder then
+                        local plyRoot = hrp
+                        local closestMob = nil
+                        local closestDistance = math.huge
+
+                        for _, islandFolder in pairs(mobFolder:GetChildren()) do
+                            if islandFolder:IsA("Folder") then
+                                for _, mobGroupFolder in pairs(islandFolder:GetChildren()) do
+                                    if mobGroupFolder:IsA("Folder") then
+                                        for _, mob in pairs(mobGroupFolder:GetChildren()) do
+                                            local mobHumanoid = mob:FindFirstChildOfClass("Humanoid")
+                                            local rootPart = mob:FindFirstChild("HumanoidRootPart")
+                                            local isMob = mob:FindFirstChild("Mob")
+
+                                            if mobHumanoid and rootPart and isMob and isMob:IsA("BoolValue") and mobHumanoid.Health > 0 then
+                                                local distance = (plyRoot.Position - rootPart.Position).Magnitude
+                                                if distance < closestDistance then
+                                                    closestDistance = distance
+                                                    closestMob = mob
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+
+                        if closestMob then
+                            local rootPart = closestMob:FindFirstChild("HumanoidRootPart")
+                            if rootPart then
+                                hrp.CFrame = rootPart.CFrame * CFrame.new(0, 6, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+                            end
+                        end
+                    end
+                end
+
+                if humanoid then
+                    humanoid.PlatformStand = false
+                    for _, obj in pairs(hrp:GetChildren()) do
+                        if obj:IsA("BodyVelocity") then
+                            obj:Destroy()
+                        end
+                    end
+                end
+                Sittingsss = nil
+            end)
+        elseif not OnMob and Sittingsss then
+            Sittingsss = nil
+            local me = game.Players.LocalPlayer.Character
+            if me then
+                local humanoid = me:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoid.PlatformStand = false
+                end
+                local hrp = me:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    for _, obj in pairs(hrp:GetChildren()) do
+                        if obj:IsA("BodyVelocity") then
+                            obj:Destroy()
+                        end
+                    end
+                end
+            end
+        end
+    end
+})
+
