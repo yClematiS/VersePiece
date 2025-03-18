@@ -102,6 +102,101 @@ local MainWindow = Rayfield:CreateWindow({
 })
 
 local MainTab = MainWindow:CreateTab("Auto Farm")
+local Tools = MainTab:CreateSection("Tools")
+local tool = {}
+local defaulttool = "?"
+
+local playertools
+local function refreshTools()
+    tool = {}
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    if character then
+        for _, obj in pairs(character:GetChildren()) do
+            if obj:IsA("Tool") then
+                table.insert(tool, obj.Name)
+            end
+        end
+    end
+    
+    for _, obj in pairs(player.Backpack:GetChildren()) do
+        if obj:IsA("Tool") then
+            table.insert(tool, obj.Name)
+        end
+    end
+
+    if playertools then
+        playertools:Refresh(tool)
+    end
+end
+
+playertools = MainTab:CreateDropdown({
+    Name = "Select Tool",
+    Options = tool,
+    CurrentOption = defaulttool,
+    MultipleOptions = false,
+    Flag = "EquipTool",
+    Callback = function(Option)
+        local selected = type(Option) == "table" and Option[1] or Option
+        if selected and table.find(tool, selected) then
+            defaulttool = selected
+        end
+    end,
+})
+
+local refreshdropdowntool = MainTab:CreateButton({
+    Name = "Refresh Tools",
+    Callback = function()
+        refreshTools()
+    end,
+})
+
+refreshTools()
+local ATools = false
+local ATools = MainTab:CreateToggle({
+    Name = "Auto Equip Selected Tool",
+    CurrentValue = false,
+    Flag = "EquipSelectedTool",
+    Callback = function(Value)
+        ATools = Value
+        local player = game.Players.LocalPlayer
+        local toolName = defaulttool
+        local tool = player.Backpack:FindFirstChild(toolName)
+        local function equipToolToCharacter()
+            local character = player.Character
+            if character and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0 then
+                local tool = player.Backpack:FindFirstChild(toolName)
+                if tool then
+                    local success, errorMessage = pcall(function()
+                        tool.Parent = character
+                    end)
+                    if not success then
+                        warn("Error equipping tool: ", errorMessage)
+                    end
+                end
+            end
+        end
+        if tool then
+            equipToolToCharacter()
+        end
+        if ATools then
+            while ATools do
+                local success, errorMessage = pcall(function()
+                    local character = player.Character
+                    equipToolToCharacter()
+                end)
+
+                if not success then
+                    warn("Error in Auto Equip loop: ", errorMessage)
+                end
+
+                task.wait(0.1)
+            end
+        end
+    end,
+})
+
+
 local InstantKill = MainTab:CreateSection("Kill Aura")
 
 killmobpercent = {
@@ -130,6 +225,73 @@ local killmobpercentDropdown = MainTab:CreateDropdown({
     end,
 })
 
+defaultstudmob = 150
+local FindClosedMob = MainTab:CreateSlider({
+    Name = "Find closest mob",
+    Range = {50, 1000},
+    Increment = 10,
+    Suffix = "Stud",
+    CurrentValue = 150,
+    Flag = "closestmobb",
+    Callback = function(Value)
+    defaultstudmob = Value
+    end,
+ })
+ local hitbox = nil
+ local ShowHitbox = false
+ 
+ local function createHitbox(radius)
+     if hitbox then
+         hitbox:Destroy()
+     end
+     hitbox = Instance.new("Part")
+     hitbox.Shape = Enum.PartType.Ball
+     hitbox.Size = Vector3.new(radius * 2, radius * 2, radius * 2)
+     hitbox.Material = Enum.Material.ForceField
+     hitbox.CastShadow = false
+     hitbox.Anchored = true
+     hitbox.CanCollide = false
+     hitbox.BrickColor = BrickColor.Red()
+     hitbox.Parent = workspace
+ end
+ 
+ local ShowHitboxToggle = MainTab:CreateToggle({
+     Name = "Mob Search Distance",
+     CurrentValue = false,
+     Flag = "Mob Search",
+     Callback = function(Value)
+         ShowHitbox = Value
+         if ShowHitbox then
+             if not hitbox then
+                 createHitbox(defaultstudmob)
+             end
+             while ShowHitbox do
+                 task.wait(0.1)
+                 local success, errorMessage = pcall(function()
+                     local mobFolder = workspace:FindFirstChild("Main")
+                     local me = game.Players.LocalPlayer.Character
+                     if not me then return end
+                     local hrp = me:FindFirstChild("HumanoidRootPart")
+                     if not hrp then return end
+ 
+                     if hitbox then
+                         hitbox.CFrame = hrp.CFrame
+                     end
+                 end)
+                 if not success then
+                     warn("Error in updating hitbox position: " .. errorMessage)
+                     break
+                 end
+             end
+         else
+             if hitbox then
+                 hitbox:Destroy()
+                 hitbox = nil
+             end
+         end
+     end
+ })
+ 
 local SetHealth = false
 local hitboxThread = nil
 local KillAura = MainTab:CreateToggle({
@@ -139,63 +301,59 @@ local KillAura = MainTab:CreateToggle({
     Callback = function(Value)
         SetHealth = Value
         if SetHealth and not hitboxThread then
+
             hitboxThread = task.spawn(function()
                 while SetHealth do
                     task.wait(0.1)
-                    local mobFolder = workspace:FindFirstChild("Main")
-                    local me = game.Players.LocalPlayer.Character
-
-                    local player = game.Players.LocalPlayer
-                    local character = player.Character or player.CharacterAdded:Wait()
-                    if not character or not character:FindFirstChild("HumanoidRootPart") then
-                        return
-                    end
                     
-                    local hrp = me:FindFirstChild("HumanoidRootPart")
-                    if not hrp then break end
-                    if mobFolder then
-                        local plyRoot = hrp
-                        local closestMob = nil
-                        local closestDistance = math.huge
+                    local success, errorMessage = pcall(function()
+                        local mobFolder = workspace:FindFirstChild("Main")
+                        local me = game.Players.LocalPlayer.Character
+                        if not me then return end
+                        local hrp = me:FindFirstChild("HumanoidRootPart")
+                        if not hrp then return end
 
-                        for _, islandFolder in pairs(mobFolder:GetChildren()) do
-                            if islandFolder:IsA("Folder") then
-                                for _, mobGroupFolder in pairs(islandFolder:GetChildren()) do
-                                    if mobGroupFolder:IsA("Folder") then
-                                        for _, mob in pairs(mobGroupFolder:GetChildren()) do
-                                            local humanoid = mob:FindFirstChildOfClass("Humanoid")
-                                            local rootPart = mob:FindFirstChild("HumanoidRootPart")
-                                            local isMob = mob:FindFirstChild("Mob")
+                        if mobFolder then
+                            local plyRoot = hrp
+                            local closestMob = nil
+                            local closestDistance = math.huge
 
-                                            if humanoid and rootPart and isMob and isMob:IsA("BoolValue") and humanoid.Health > 0 then
-                                                local distance = (plyRoot.Position - rootPart.Position).Magnitude
-                                                if distance < closestDistance then
-                                                    closestDistance = distance
-                                                    closestMob = mob
+                            for _, islandFolder in pairs(mobFolder:GetChildren()) do
+                                if islandFolder:IsA("Folder") then
+                                    for _, mobGroupFolder in pairs(islandFolder:GetChildren()) do
+                                        if mobGroupFolder:IsA("Folder") then
+                                            for _, mob in pairs(mobGroupFolder:GetChildren()) do
+                                                local humanoid = mob:FindFirstChildOfClass("Humanoid")
+                                                local rootPart = mob:FindFirstChild("HumanoidRootPart")
+                                                local isMob = mob:FindFirstChild("Mob")
+
+                                                if humanoid and rootPart and isMob and isMob:IsA("BoolValue") and humanoid.Health > 0 then
+                                                    local distance = (plyRoot.Position - rootPart.Position).Magnitude
+                                                    if distance < closestDistance then
+                                                        closestDistance = distance
+                                                        closestMob = mob
+                                                    end
                                                 end
                                             end
                                         end
                                     end
                                 end
                             end
-                        end
 
-                        if closestMob then
-                            local humanoid = closestMob:FindFirstChildOfClass("Humanoid")
-                            local rootPart = closestMob:FindFirstChild("HumanoidRootPart")
-                            if humanoid and rootPart and humanoid.Health > 0 then
-                                if humanoid.Health < humanoid.MaxHealth * 0.99 then
-                                    rootPart.Anchored = true
-                                end
-                                if humanoid.Health < humanoid.MaxHealth * defaultkillmobpercent then
-                                    for i = 1, 3 do
-                                        rootPart.Anchored = false
-                                        humanoid.Health = 0
-                                        rootPart.Anchored = false
-                                    end                                    
+                            if closestMob and closestDistance <= defaultstudmob then
+                                local humanoid = closestMob:FindFirstChildOfClass("Humanoid")
+                                local rootPart = closestMob:FindFirstChild("HumanoidRootPart")
+                                if humanoid and rootPart and humanoid.Health > 0 then
+                                    if humanoid.Health < humanoid.MaxHealth * defaultkillmobpercent then
+                                            humanoid.Health = 0
+                                    end
                                 end
                             end
                         end
+                    end)
+                    
+                    if not success then
+                        warn("Error in KillAura loop: ", errorMessage)
                     end
                 end
                 hitboxThread = nil
@@ -206,9 +364,10 @@ local KillAura = MainTab:CreateToggle({
     end
 })
 
+
 local OnMob = false
-Sittingsss = nil
-local OnMob = MainTab:CreateToggle({
+local Sittingsss = nil
+local GoToMob = MainTab:CreateToggle({
     Name = "Go to mob",
     CurrentValue = false,
     Flag = "OnMob",
@@ -219,77 +378,74 @@ local OnMob = MainTab:CreateToggle({
                 local bodyVelocity
                 while OnMob do
                     task.wait(0.1)
-                    local mobFolder = workspace:FindFirstChild("Main")
-                    local player = game.Players.LocalPlayer
-                    local character = player.Character or player.CharacterAdded:Wait()
+                    local success, errorMessage = pcall(function()
+                        local mobFolder = workspace:FindFirstChild("Main")
+                        local player = game.Players.LocalPlayer
+                        local character = player.Character or player.CharacterAdded:Wait()
+                        local humanoid = character:FindFirstChildOfClass("Humanoid")
+                        local hrp = character:FindFirstChild("HumanoidRootPart")
 
-                    if not character or not character:FindFirstChild("HumanoidRootPart") then
-                        break
-                    end
-                    
-                    local humanoid = character:FindFirstChildOfClass("Humanoid")
-                    if not humanoid or humanoid.Health <= 0 then
+                        if not humanoid or humanoid.Health <= 0 or not hrp then
+                            return
+                        end
+
+                        humanoid.PlatformStand = true
+
                         if bodyVelocity then
                             bodyVelocity:Destroy()
                         end
-                        break
-                    end
+                        bodyVelocity = Instance.new("BodyVelocity")
+                        bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
+                        bodyVelocity.Velocity = Vector3.zero
+                        bodyVelocity.Parent = hrp
 
-                    local hrp = character:FindFirstChild("HumanoidRootPart")
-                    if not hrp then break end
+                        if mobFolder then
+                            local closestMob, closestDistance = nil, math.huge
+                            for _, islandFolder in pairs(mobFolder:GetChildren()) do
+                                if islandFolder:IsA("Folder") then
+                                    for _, mobGroupFolder in pairs(islandFolder:GetChildren()) do
+                                        if mobGroupFolder:IsA("Folder") then
+                                            for _, mob in pairs(mobGroupFolder:GetChildren()) do
+                                                local mobHumanoid = mob:FindFirstChildOfClass("Humanoid")
+                                                local rootPart = mob:FindFirstChild("HumanoidRootPart")
+                                                local isMob = mob:FindFirstChild("Mob")
 
-                    humanoid.PlatformStand = true
-
-                    if bodyVelocity then
-                        bodyVelocity:Destroy()
-                    end
-                    bodyVelocity = Instance.new("BodyVelocity")
-                    bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
-                    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-                    bodyVelocity.Parent = hrp
-
-                    if mobFolder then
-                        local plyRoot = hrp
-                        local closestMob = nil
-                        local closestDistance = math.huge
-
-                        for _, islandFolder in pairs(mobFolder:GetChildren()) do
-                            if islandFolder:IsA("Folder") then
-                                for _, mobGroupFolder in pairs(islandFolder:GetChildren()) do
-                                    if mobGroupFolder:IsA("Folder") then
-                                        for _, mob in pairs(mobGroupFolder:GetChildren()) do
-                                            local mobHumanoid = mob:FindFirstChildOfClass("Humanoid")
-                                            local rootPart = mob:FindFirstChild("HumanoidRootPart")
-                                            local isMob = mob:FindFirstChild("Mob")
-
-                                            if mobHumanoid and rootPart and isMob and isMob:IsA("BoolValue") and mobHumanoid.Health > 0 then
-                                                local distance = (plyRoot.Position - rootPart.Position).Magnitude
-                                                if distance < closestDistance then
-                                                    closestDistance = distance
-                                                    closestMob = mob
+                                                if mobHumanoid and rootPart and isMob and isMob:IsA("BoolValue") and mobHumanoid.Health > 0 then
+                                                    local distance = (hrp.Position - rootPart.Position).Magnitude
+                                                    if distance < closestDistance then
+                                                        closestDistance = distance
+                                                        closestMob = mob
+                                                    end
                                                 end
                                             end
                                         end
                                     end
                                 end
                             end
-                        end
 
-                        if closestMob and closestDistance <= 150 then
-                            local rootPart = closestMob:FindFirstChild("HumanoidRootPart")
-                            if rootPart then
-                                hrp.CFrame = rootPart.CFrame * CFrame.new(0, 6, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+                            if closestMob and closestDistance <= defaultstudmob then
+                                local rootPart = closestMob:FindFirstChild("HumanoidRootPart")
+                                if rootPart then
+                                    hrp.CFrame = rootPart.CFrame * CFrame.new(0, 6, 2) * CFrame.Angles(math.rad(-90), 0, 0)
+                                end
                             end
                         end
+                    end)
+
+                    if not success then
+                        warn("Error in GoToMob loop: ", errorMessage)
                     end
                 end
 
+                local player = game.Players.LocalPlayer
+                local character = player.Character
                 if character then
                     local humanoid = character:FindFirstChildOfClass("Humanoid")
+                    local hrp = character:FindFirstChild("HumanoidRootPart")
+
                     if humanoid then
                         humanoid.PlatformStand = false
                     end
-                    local hrp = character:FindFirstChild("HumanoidRootPart")
                     if hrp then
                         if bodyVelocity then
                             bodyVelocity:Destroy()
@@ -301,18 +457,19 @@ local OnMob = MainTab:CreateToggle({
                         end
                     end
                 end
-
                 Sittingsss = nil
             end)
         elseif not OnMob and Sittingsss then
             Sittingsss = nil
-            local me = game.Players.LocalPlayer.Character
-            if me then
-                local humanoid = me:FindFirstChildOfClass("Humanoid")
+            local player = game.Players.LocalPlayer
+            local character = player.Character
+            if character then
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                local hrp = character:FindFirstChild("HumanoidRootPart")
+
                 if humanoid then
                     humanoid.PlatformStand = false
                 end
-                local hrp = me:FindFirstChild("HumanoidRootPart")
                 if hrp then
                     for _, obj in pairs(hrp:GetChildren()) do
                         if obj:IsA("BodyVelocity") then
@@ -335,58 +492,62 @@ local Minning = MainTab:CreateToggle({
         Minning = Value
         local oreFolder = workspace.Main.Ore
         local player = game.Players.LocalPlayer
-        local character = player.Character or player.CharacterAdded:Wait()
-        if not character or not character:FindFirstChild("HumanoidRootPart") then
-            return
-        end
-
-        local character = player.Character or player.CharacterAdded:Wait()
-        local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+        local humanoidRootPart = nil
         local camera = game.Workspace.CurrentCamera
         
         while Minning do
-            if not player.Character then
-                repeat wait(1) until player.Character
-                character = player.Character
-                humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-            end
+            local success, character = pcall(function()
+                return player.Character or player.CharacterAdded:Wait()
+            end)
+            
+            if success then
+                humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                
+                if not humanoidRootPart then
+                    warn("HumanoidRootPart not found")
+                    wait(1)
+                else
+                    for _, ore in pairs(oreFolder:GetChildren()) do
+                        if ore:IsA("Model") and ore.Name == "Ore" then
+                            local foundPrompt = false
+                            
+                            for _, obj in pairs(ore:GetDescendants()) do
+                                if obj:IsA("ProximityPrompt") and obj.Name == "{}" then
+                                    if not obj.Enabled then
+                                        foundPrompt = false
+                                        break
+                                    end
+                                    
+                                    humanoidRootPart.CFrame = ore.PrimaryPart.CFrame * CFrame.new(0, 3, 0)
+                                    
+                                    local orePosition = ore.PrimaryPart.Position
+                                    local cameraOffset = Vector3.new(0, 5, 0)
+                                    camera.CFrame = CFrame.new(orePosition + cameraOffset, orePosition)
 
-            for _, ore in pairs(oreFolder:GetChildren()) do
-                if ore:IsA("Model") and ore.Name == "Ore" then
-                    local foundPrompt = false
-                    
-                    for _, obj in pairs(ore:GetDescendants()) do
-                        if obj:IsA("ProximityPrompt") and obj.Name == "{}" then
-                            if not obj.Enabled then
-                                foundPrompt = false
-                                break
+                                    obj.RequiresLineOfSight = false
+
+                                    wait(0.4)
+                                    obj:InputHoldBegin()
+                                    foundPrompt = true
+                                    break
+                                end
                             end
                             
-                            humanoidRootPart.CFrame = ore.PrimaryPart.CFrame * CFrame.new(0, 3, 0)
-                            
-                            local orePosition = ore.PrimaryPart.Position
-                            local cameraOffset = Vector3.new(0, 5, 0)
-                            camera.CFrame = CFrame.new(orePosition + cameraOffset, orePosition)
-
-                            obj.RequiresLineOfSight = false
-
-                            wait(0.4)
-                            obj:InputHoldBegin()
-                            foundPrompt = true
-                            break
+                            if foundPrompt then
+                                break
+                            end
                         end
                     end
-                    
-                    if foundPrompt then
-                        break
-                    end
                 end
+            else
+                warn("Player character not found or died")
+                wait(1)
             end
+            
             wait(1)
         end
     end
 })
-
 
 local AutoClick = MainTab:CreateSection("Auto Click")
 
@@ -458,36 +619,45 @@ if not screenGui then
 end
 
 local function endClick()
-    local crosshair = screenGui:FindFirstChildOfClass("ImageLabel")
-    if crosshair then
-        local midX, midY = crosshair.AbsolutePosition.X + 10, crosshair.AbsolutePosition.Y + 10
-        VirtualInputManager:SendMouseButtonEvent(midX, midY, 0, true, game, 0)
-        wait(0.1)
-        VirtualInputManager:SendMouseButtonEvent(midX, midY, 0, false, game, 0)
+    local success, errorMessage = pcall(function()
+        local crosshair = screenGui:FindFirstChildOfClass("ImageLabel")
+        if crosshair then
+            local midX, midY = crosshair.AbsolutePosition.X + 10, crosshair.AbsolutePosition.Y + 10
+            VirtualInputManager:SendMouseButtonEvent(midX, midY, 0, true, game, 0)
+            task.wait(0.1)
+            VirtualInputManager:SendMouseButtonEvent(midX, midY, 0, false, game, 0)
+        end
+    end)
+    
+    if not success then
+        warn("Error in endClick:", errorMessage)
     end
 end
 
-Clicking = false
-local Clicking = MainTab:CreateToggle({
+local Clicking = false
+local clickThread = nil
+Clicking = MainTab:CreateToggle({
     Name = "Auto Click",
     CurrentValue = false,
     Flag = "Clicking",
     Callback = function(Value)
         Clicking = Value
-        if Clicking then
-            local player = game.Players.LocalPlayer
-            local character = player.Character or player.CharacterAdded:Wait()
-            local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-
-            while Clicking do
-                local player = game.Players.LocalPlayer
-                local character = player.Character or player.CharacterAdded:Wait()
-                if not character or not character:FindFirstChild("HumanoidRootPart") then
-                    return
+        if Clicking and not clickThread then
+            clickThread = task.spawn(function()
+                while Clicking do
+                    local success, errorMessage = pcall(function()
+                        endClick()
+                    end)
+                    
+                    if not success then
+                        warn("Error in Auto Click loop:", errorMessage)
+                    end
+                    
+                    game:GetService("RunService").RenderStepped:Wait()
                 end
-                endClick()
-                wait(0.1)
-            end
+            end)
+        elseif not Clicking and clickThread then
+            clickThread = nil
         end
     end
 })
