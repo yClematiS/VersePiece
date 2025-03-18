@@ -661,3 +661,104 @@ Clicking = MainTab:CreateToggle({
         end
     end
 })
+
+Rayfield:LoadConfiguration()
+
+_G.searcherayfield = true
+local foundray = false
+while _G.searcherayfield and not foundray do
+    task.wait(1)
+    local coreGui = game:GetService("CoreGui")
+    for _, v in pairs(coreGui:GetDescendants()) do
+        if v.Name == "Rayfield" then
+            local rayfie = v
+            foundray = true
+            _G.searcherayfield = false
+            rayfie.Enabled = false
+
+            local screenGui = Instance.new("ScreenGui")
+            screenGui.Name = "ToggleRayfield"
+            screenGui.Parent = coreGui
+
+            local shadowframe = Instance.new("Frame")
+            shadowframe.Size = UDim2.new(0, 100, 0, 100)
+            shadowframe.Position = UDim2.new(0.015, 0, 0.2, 0)
+            shadowframe.BackgroundTransparency = 0.8
+            shadowframe.BorderSizePixel = 0
+            shadowframe.BackgroundColor3 = Color3.fromRGB(153, 102, 204)
+            shadowframe.Parent = screenGui
+
+            local shadowcorner = Instance.new("UICorner")
+            shadowcorner.CornerRadius = UDim.new(0.2, 0)
+            shadowcorner.Parent = shadowframe
+
+            local shadowbutton = Instance.new("ImageButton")
+            shadowbutton.Size = UDim2.new(1, 0, 1, 0)
+            shadowbutton.BackgroundTransparency = 1
+            shadowbutton.Image = "http://www.roblox.com/asset/?id=83415391084673"
+            shadowbutton.ImageColor3 = Color3.fromRGB(0,0,0)
+            shadowbutton.Parent = shadowframe
+
+            local frame = Instance.new("Frame")
+            frame.Size = UDim2.new(0, 100, 0, 100)
+            frame.Position = UDim2.new(0.015, 0, 0.2, 0)
+            frame.BackgroundTransparency = 0.5
+            frame.BorderSizePixel = 0
+            frame.BackgroundColor3 = Color3.fromRGB(153, 102, 204)
+            frame.Parent = screenGui
+
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0.2, 0)
+            corner.Parent = frame
+
+            local button = Instance.new("ImageButton")
+            button.Size = UDim2.new(1, 0, 1, 0)
+            button.BackgroundTransparency = 1
+            button.Image = "http://www.roblox.com/asset/?id=83415391084673"
+            button.ImageColor3 = Color3.fromRGB(255, 255, 255)
+            button.Parent = frame
+            
+
+            local isEnabled = false
+            button.MouseButton1Click:Connect(function()
+                isEnabled = not isEnabled
+                rayfie.Enabled = isEnabled
+                local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+                local goal = {Size = UDim2.new(0, 120, 0, 120)}
+                local tween = game:GetService("TweenService"):Create(button, tweenInfo, goal)
+                tween:Play()
+                tween.Completed:Connect(function()
+                    local returnTween = game:GetService("TweenService"):Create(button, tweenInfo, {Size = UDim2.new(0, 100, 0, 100)})
+                    returnTween:Play()
+                end)
+            end)
+            local dragging = false
+            local dragInput, mousePos, buttonPos
+            local userInputService = game:GetService("UserInputService")
+
+            button.InputBegan:Connect(function(input, gameProcessedEvent)
+                if gameProcessedEvent then return end
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    dragging = true
+                    mousePos = input.Position
+                    buttonPos = button.Position
+                end
+            end)
+
+            button.InputChanged:Connect(function(input)
+                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                    local delta = input.Position - mousePos
+                    button.Position = UDim2.new(buttonPos.X.Scale, buttonPos.X.Offset + delta.X, buttonPos.Y.Scale, buttonPos.Y.Offset + delta.Y)
+                end
+            end)
+
+            button.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    dragging = false
+                end
+            end)
+            break
+        end
+    end
+end
+
