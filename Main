@@ -225,7 +225,6 @@ local FindClosedMob = MainTab:CreateSlider({
  
  local SetHealth = false
  local hitboxThread = nil
- 
  local KillAura = MainTab:CreateToggle({
      Name = "Instant Kill",
      CurrentValue = false,
@@ -286,10 +285,11 @@ local FindClosedMob = MainTab:CreateSlider({
                                  local humanoid = closestMob:FindFirstChildOfClass("Humanoid")
                                  local rootPart = closestMob:FindFirstChild("HumanoidRootPart")
                                  if humanoid and rootPart and humanoid.Health > 0 then
-                                     humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+                                    
                                      
                                      if humanoid.Health < humanoid.MaxHealth * defaultkillmobpercent then
                                          humanoid.Health = 0
+                                         humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
                                      end
                                  end
                              end
@@ -307,12 +307,53 @@ local FindClosedMob = MainTab:CreateSlider({
          end
      end
  })
- 
- 
+
+ local MobFarmer = MainTab:CreateSection("Teleport to Mob")
+local defaultrange = 6
+local selectedMethod = "Up"
+
+local function updateMobMethods()
+    return {
+        ["Front"] = CFrame.new(0, 0, -defaultrange) * CFrame.Angles(0, math.rad(180), 0),
+        ["Up"] = CFrame.new(0, defaultrange, 0) * CFrame.Angles(math.rad(-90), 0, 0),
+        ["Down"] = CFrame.new(0, -defaultrange, 0) * CFrame.Angles(math.rad(90), 0, 0),
+        ["Behind"] = CFrame.new(0, 0, defaultrange) * CFrame.Angles(0, math.rad(0), 0),
+    }
+end
+
+local mobMethods = updateMobMethods()
+local defaultmobmethod = mobMethods[selectedMethod]
+
+local FindClosedMob = MainTab:CreateSlider({
+    Name = "Farm Mob Range",
+    Range = {1, 20},
+    Increment = 1,
+    Suffix = "Stud",
+    CurrentValue = defaultrange,
+    Flag = "mobfarmrange",
+    Callback = function(Value)
+        defaultrange = Value
+        mobMethods = updateMobMethods()
+        defaultmobmethod = mobMethods[selectedMethod]
+    end,
+})
+
+local mobDropdown = MainTab:CreateDropdown({
+    Name = "Mob Farm Method",
+    Options = {"Front", "Up", "Down", "Behind"},
+    CurrentOption = selectedMethod,
+    MultipleOptions = false,
+    Flag = "mobmethod",
+    Callback = function(Option)
+        selectedMethod = type(Option) == "table" and Option[1] or Option
+        defaultmobmethod = mobMethods[selectedMethod]
+    end,
+})
+
  local OnMob = false
  local Sittingsss = nil
  local GoToMob = MainTab:CreateToggle({
-     Name = "Go to mob",
+     Name = "Go to closest mob",
      CurrentValue = false,
      Flag = "OnMob",
      Callback = function(Value)
@@ -383,7 +424,7 @@ local FindClosedMob = MainTab:CreateSlider({
                              if closestMob and closestDistance <= defaultstudmob then
                                  local rootPart = closestMob:FindFirstChild("HumanoidRootPart")
                                  if rootPart then
-                                     hrp.CFrame = rootPart.CFrame * CFrame.new(0, 6, 2) * CFrame.Angles(math.rad(-90), 0, 0)
+                                     hrp.CFrame = rootPart.CFrame * defaultmobmethod
                                  end
                              end
                          end
@@ -438,6 +479,99 @@ local FindClosedMob = MainTab:CreateSlider({
          end
      end
  })  
+
+ local Mine = MainTab:CreateSection("Auto Mine Ore")
+local Minning = false
+local minedOre = {}
+local function mineOre(ore)
+    local player = game.Players.LocalPlayer
+    local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return false end
+    local prompt = nil
+    for _, obj in pairs(ore:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") and obj.Enabled then
+            prompt = obj
+            break
+        end
+    end
+    if not prompt then
+        return false
+    end
+
+    humanoidRootPart.CFrame = ore.PrimaryPart.CFrame * CFrame.new(0, 3, 0)
+
+    local camera = game.Workspace.CurrentCamera
+    local orePosition = ore.PrimaryPart.Position
+    local cameraOffset = Vector3.new(0, 5, 0)
+    camera.CFrame = CFrame.new(orePosition + cameraOffset, orePosition)
+    task.wait(0.3)
+    prompt.RequiresLineOfSight = false
+    prompt:InputHoldBegin()
+    task.wait(5)
+    prompt:InputHoldEnd()
+
+    minedOre[ore] = true
+    return true
+end
+
+local MinningToggle = MainTab:CreateToggle({
+    Name = "Auto Mine Ore",
+    CurrentValue = false,
+    Flag = "AOre",
+    Callback = function(Value)
+        Minning = Value
+        local oreFolder = workspace.Main.Ore
+        local player = game.Players.LocalPlayer
+        
+        while Minning do
+            local character = player.Character or player.CharacterAdded:Wait()
+            if not character then
+                warn("Player character not found or died")
+                wait(1)
+                break
+            end
+
+            if not Minning then break end
+            local ores = {}
+            local oresToMine = 0
+            local oresMined = 0
+
+            for _, ore in pairs(oreFolder:GetChildren()) do
+                if ore:IsA("Model") and ore.Name == "Ore" then
+                    local promptFound = false
+                    for _, obj in pairs(ore:GetDescendants()) do
+                        if obj:IsA("ProximityPrompt") and obj.Enabled then
+                            promptFound = true
+                            oresToMine = oresToMine + 1
+                            break
+                        end
+                    end
+
+                    if promptFound and not minedOre[ore] then
+                        table.insert(ores, ore)
+                    end
+                end
+            end
+
+            if #ores > 0 then
+                for _, ore in ipairs(ores) do
+                    if not Minning then break end
+                    if mineOre(ore) then
+                        oresMined = oresMined + 1
+                        task.wait(0.5)
+                    end
+                end
+            end
+
+            if oresMined == oresToMine then
+                minedOre = {}
+                wait(1)
+            end
+
+            wait(1)
+        end
+    end,
+})
 
 local AutoSkill = MainWindow:CreateTab("Tools")
 local Tools = AutoSkill:CreateSection("Tools")
@@ -534,7 +668,7 @@ end)
 
 local autoattack = false
 local AutoAttack = AutoSkill:CreateToggle({
-    Name = "Auto Hit",
+    Name = "Auto Hit [No Animation]",
     CurrentValue = false,
     Flag = "AHit",
     Callback = function(Value)
@@ -572,7 +706,7 @@ local AutoAttack = AutoSkill:CreateToggle({
 local quickautoattack = false
 local count = 1
 local quickattack = AutoSkill:CreateToggle({
-    Name = "Auto Quick Hit",
+    Name = "Auto Fast Hit [Animation]",
     CurrentValue = false,
     Flag = "quickautoattack",
     Callback = function(Value)
@@ -657,6 +791,12 @@ local spamskill = AutoSkill:CreateToggle({
                 end
 
                 local toolstype = equippedTool:FindFirstChildOfClass("BoolValue")
+                if toolstype.Name == "Fruit" or "Sword" then
+                    combattype = toolstype.Name
+                end
+                if toolstype.Name == "Combat" then
+                    combattype = "Special"
+                end
                 if not toolstype then
                     error("No item type found in the tool.")
                 end
@@ -664,7 +804,7 @@ local spamskill = AutoSkill:CreateToggle({
                 for _, skill in ipairs(defaultsecskills) do
                     local args = {
                         [1] = "Server",
-                        [2] = toolstype.Name,
+                        [2] = combattype,
                         [3] = skill,
                         [4] = true,
                         [5] = equippedTool.Name
@@ -680,100 +820,88 @@ local spamskill = AutoSkill:CreateToggle({
     end
 })
 
+local location = MainWindow:CreateTab("Teleport")
+local gotoplayer = location:CreateSection("Players")
+local GotoPlayerRepeat = false
+local defaultotherplayer = ""
+local otplayers = {}
 
-local MiscTab = MainWindow:CreateTab("Misc")
-local Mine = MiscTab:CreateSection("Auto Mine Ore")
-local Minning = false
-local minedOre = {}
-local function mineOre(ore)
-    local player = game.Players.LocalPlayer
-    local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return false end
-    local prompt = nil
-    for _, obj in pairs(ore:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") and obj.Enabled then
-            prompt = obj
-            break
-        end
-    end
-    if not prompt then
-        return false
-    end
-
-    humanoidRootPart.CFrame = ore.PrimaryPart.CFrame * CFrame.new(0, 3, 0)
-
-    local camera = game.Workspace.CurrentCamera
-    local orePosition = ore.PrimaryPart.Position
-    local cameraOffset = Vector3.new(0, 5, 0)
-    camera.CFrame = CFrame.new(orePosition + cameraOffset, orePosition)
-    task.wait(0.3)
-    prompt.RequiresLineOfSight = false
-    prompt:InputHoldBegin()
-    task.wait(5)
-    prompt:InputHoldEnd()
-
-    minedOre[ore] = true
-    return true
-end
-
-local MinningToggle = MiscTab:CreateToggle({
-    Name = "Auto Mine Ore",
-    CurrentValue = false,
-    Flag = "AOre",
-    Callback = function(Value)
-        Minning = Value
-        local oreFolder = workspace.Main.Ore
-        local player = game.Players.LocalPlayer
-        
-        while Minning do
-            local character = player.Character or player.CharacterAdded:Wait()
-            if not character then
-                warn("Player character not found or died")
-                wait(1)
-                break
-            end
-
-            if not Minning then break end
-            local ores = {}
-            local oresToMine = 0
-            local oresMined = 0
-
-            for _, ore in pairs(oreFolder:GetChildren()) do
-                if ore:IsA("Model") and ore.Name == "Ore" then
-                    local promptFound = false
-                    for _, obj in pairs(ore:GetDescendants()) do
-                        if obj:IsA("ProximityPrompt") and obj.Enabled then
-                            promptFound = true
-                            oresToMine = oresToMine + 1
-                            break
-                        end
-                    end
-
-                    if promptFound and not minedOre[ore] then
-                        table.insert(ores, ore)
-                    end
-                end
-            end
-
-            if #ores > 0 then
-                for _, ore in ipairs(ores) do
-                    if not Minning then break end
-                    if mineOre(ore) then
-                        oresMined = oresMined + 1
-                        task.wait(0.5)
-                    end
-                end
-            end
-
-            if oresMined == oresToMine then
-                minedOre = {}
-                wait(1)
-            end
-
-            wait(1)
+local otherplayers = location:CreateDropdown({
+    Name = "Select Player",
+    Options = otplayers,
+    CurrentOption = defaultotherplayer,
+    MultipleOptions = false,
+    Callback = function(Option)
+        local selected = type(Option) == "table" and Option[1] or Option
+        if selected and table.find(otplayers, selected) then
+            defaultotherplayer = selected
         end
     end,
 })
+
+local function refreshplayers()
+    otplayers = {}
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer then
+            table.insert(otplayers, player.Name)
+        end
+    end
+    if otherplayers then
+        otherplayers:Refresh(otplayers)
+    end
+end
+
+local refreshdropdownplayers = location:CreateButton({
+    Name = "Refresh Players",
+    Callback = function()
+        refreshplayers()
+    end,
+})
+
+local GotoPlayerToggle = location:CreateToggle({
+    Name = "Goto Selected Player",
+    CurrentValue = false,
+    Callback = function(Value)
+        GotoPlayerRepeat = Value
+        if GotoPlayerRepeat then
+            task.spawn(function()
+                while GotoPlayerRepeat do
+                    wait(0.1)
+
+                    local targetPlayer = game.Players:FindFirstChild(defaultotherplayer)
+                    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        local me = game.Players.LocalPlayer.Character
+                        if me and me:FindFirstChild("HumanoidRootPart") then
+                            me:PivotTo(targetPlayer.Character.HumanoidRootPart.CFrame*CFrame.new(0,1,2))
+                        end
+                    end
+                end
+            end)
+        end
+    end,
+})
+refreshplayers()
+local map = location:CreateSection("Islands")
+
+for _, obj in pairs(workspace.Map:GetChildren()) do
+    if obj:IsA("Model") then
+        local primary = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+        
+        if primary then
+            location:CreateButton({
+                Name = obj.Name,
+                Callback = function()
+                    local me = game.Players.LocalPlayer.Character
+                    if me and me:FindFirstChild("HumanoidRootPart") then
+                        me:PivotTo(primary.CFrame*CFrame.new(0,70,0))
+                    end
+                end
+            })
+        end
+    end
+end
+
+local MiscTab = MainWindow:CreateTab("Misc")
 
 local AutoClick = MiscTab:CreateSection("Auto Click")
 local UserInputService = game:GetService("UserInputService")
@@ -889,7 +1017,6 @@ Clicking = MiscTab:CreateToggle({
 })
 
 local PlayerPlus = MiscTab:CreateSection("Player")
-
 local defaultMaxZoom = game.Players.LocalPlayer.CameraMaxZoomDistance
 local Maxzoom = MiscTab:CreateToggle({
     Name = "Unlock Max Zoom",
@@ -903,6 +1030,19 @@ local Maxzoom = MiscTab:CreateToggle({
         end
     end,
 })
+
+local ClearMobs = MiscTab:CreateSection("Clear All Loaded Mobs")
+local ClearMob = MiscTab:CreateButton({
+    Name = "Clear All Loaded Mobs [RISK]",
+    Callback = function()
+        local tofindmob = workspace.Main
+        for i,v in pairs(tofindmob:GetDescendants()) do
+            if v.Name == "Humanoid" then
+                v.Health = 0
+        end
+    end
+    end,
+ })
 
 Rayfield:LoadConfiguration()
 
