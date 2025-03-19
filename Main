@@ -225,12 +225,14 @@ local FindClosedMob = MainTab:CreateSlider({
  
  local SetHealth = false
  local hitboxThread = nil
+ 
  local KillAura = MainTab:CreateToggle({
      Name = "Instant Kill",
      CurrentValue = false,
      Flag = "Kill Aura",
      Callback = function(Value)
          SetHealth = Value
+         
          if SetHealth and not hitboxThread then
              hitboxThread = task.spawn(function()
                  while SetHealth do
@@ -245,17 +247,15 @@ local FindClosedMob = MainTab:CreateSlider({
  
                          if mobFolder then
                              local plyRoot = hrp
-                             local closestMob = nil
-                             local closestDistance = math.huge
- 
+                             local closestMob, closestDistance = nil, math.huge
                              for _, islandFolder in pairs(mobFolder:GetChildren()) do
                                  if islandFolder:IsA("Folder") then
                                      for _, mob in pairs(islandFolder:GetChildren()) do
-                                         local humanoid = mob:FindFirstChildOfClass("Humanoid")
+                                         local mobHumanoid = mob:FindFirstChildOfClass("Humanoid")
                                          local rootPart = mob:FindFirstChild("HumanoidRootPart")
                                          local isMob = mob:FindFirstChild("Mob")
- 
-                                         if humanoid and rootPart and isMob and isMob:IsA("BoolValue") and humanoid.Health > 0 then
+                                         
+                                         if mobHumanoid and rootPart and isMob and isMob:IsA("BoolValue") and mobHumanoid.Health > 0 then
                                              local distance = (plyRoot.Position - rootPart.Position).Magnitude
                                              if distance < closestDistance then
                                                  closestDistance = distance
@@ -263,9 +263,25 @@ local FindClosedMob = MainTab:CreateSlider({
                                              end
                                          end
                                      end
+                                     for _, mobGroupFolder in pairs(islandFolder:GetChildren()) do
+                                         if mobGroupFolder:IsA("Folder") then
+                                             for _, mob in pairs(mobGroupFolder:GetChildren()) do
+                                                 local mobHumanoid = mob:FindFirstChildOfClass("Humanoid")
+                                                 local rootPart = mob:FindFirstChild("HumanoidRootPart")
+                                                 local isMob = mob:FindFirstChild("Mob")
+                                                 
+                                                 if mobHumanoid and rootPart and isMob and isMob:IsA("BoolValue") and mobHumanoid.Health > 0 then
+                                                     local distance = (plyRoot.Position - rootPart.Position).Magnitude
+                                                     if distance < closestDistance then
+                                                         closestDistance = distance
+                                                         closestMob = mob
+                                                     end
+                                                 end
+                                             end
+                                         end
+                                     end
                                  end
                              end
- 
                              if closestMob and closestDistance <= defaultstudmob then
                                  local humanoid = closestMob:FindFirstChildOfClass("Humanoid")
                                  local rootPart = closestMob:FindFirstChild("HumanoidRootPart")
@@ -290,7 +306,8 @@ local FindClosedMob = MainTab:CreateSlider({
              hitboxThread = nil
          end
      end
- })  
+ })
+ 
  
  local OnMob = false
  local Sittingsss = nil
@@ -421,8 +438,6 @@ local FindClosedMob = MainTab:CreateSlider({
          end
      end
  })  
-
- 
 
 local AutoSkill = MainWindow:CreateTab("Tools")
 local Tools = AutoSkill:CreateSection("Tools")
