@@ -626,8 +626,10 @@ local AutoBosses = MainTab:CreateToggle({
 local Mine = MainTab:CreateSection("Auto Mine Ore")
 local Minning = false
 local minedOre = {}
-local function mineOre(ore)
+local oresToMine = 0
+local oresMined = 0
 
+local function mineOre(ore)
     local player = game.Players.LocalPlayer
     local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if not humanoidRootPart then return false end
@@ -666,15 +668,18 @@ local MinningToggle = MainTab:CreateToggle({
         Minning = Value
         local oreFolder = workspace.Main.Ore
         local player = game.Players.LocalPlayer
+
         if IsWorldBoss or IsFindingWhip then
             oresToMine = 0
             oresMined = 0
+            minedOre = {}
             return
         end
 
-        IsMining = true
         if not Minning then
-            IsMining = false
+            oresToMine = 0
+            oresMined = 0
+            minedOre = {}
         end
 
         while Minning do
@@ -685,7 +690,6 @@ local MinningToggle = MainTab:CreateToggle({
                 break
             end
 
-            if not Minning then break end
             local ores = {}
             oresToMine = 0
             oresMined = 0
@@ -707,7 +711,7 @@ local MinningToggle = MainTab:CreateToggle({
                 end
             end
 
-            if #ores > 0 then
+            if oresToMine > 0 then
                 for _, ore in ipairs(ores) do
                     if not Minning then break end
                     if mineOre(ore) then
@@ -715,10 +719,14 @@ local MinningToggle = MainTab:CreateToggle({
                         task.wait(0.5)
                     end
                 end
+            else
+                wait(1)
             end
 
             if oresMined == oresToMine then
                 minedOre = {}
+                oresToMine = 0
+                oresMined = 0
                 wait(1)
             end
 
@@ -726,6 +734,7 @@ local MinningToggle = MainTab:CreateToggle({
         end
     end,
 })
+
 
 local Wisp = MainTab:CreateSection("Auto Find Wisp")
 findingwisp = false
