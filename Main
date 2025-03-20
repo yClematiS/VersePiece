@@ -1474,10 +1474,11 @@ local savepower = MiscTab:CreateToggle({
                     task.wait(10)
                 end
             end)
-
+            runService:Set3dRenderingEnabled(false)
             createBlackScreen()
         else
             setfpscap(60)
+            runService:Set3dRenderingEnabled(true)
             removeBlackScreen()
         end
     end,
