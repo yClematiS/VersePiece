@@ -1143,10 +1143,6 @@ local Afindwisp = ItemTap:CreateToggle({
             while findingwisp do
                 task.wait(1)
 
-                if IsWorldBoss or IsLootingChest then
-                    return
-                end
-
                 local whereiswisp = workspace:FindFirstChild("Main")
                 if whereiswisp then
                     whereiswisp = whereiswisp:FindFirstChild("Wisp")
