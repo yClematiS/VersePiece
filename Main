@@ -982,11 +982,8 @@ local AutoLootChests = MainTab:CreateToggle({
                     IsLootingChest = true
 
                     teleportToChest(chest)
-                    task.wait(1) 
-
                     interactWithChest(chest)
                     task.wait(1)
-
                     lootMaterials()
 
                     IsLootingChest = false
