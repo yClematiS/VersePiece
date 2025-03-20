@@ -680,6 +680,7 @@ local MinningToggle = MainTab:CreateToggle({
             oresToMine = 0
             oresMined = 0
             minedOre = {}
+            IsMining = false
         end
 
         while Minning do
@@ -689,6 +690,7 @@ local MinningToggle = MainTab:CreateToggle({
                 wait(1)
                 break
             end
+            IsMining = true
 
             local ores = {}
             oresToMine = 0
