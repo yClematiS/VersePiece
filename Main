@@ -708,35 +708,54 @@ local MinningToggle = MainTab:CreateToggle({
         end
 
         while Minning do
-            local character = player.Character or player.CharacterAdded:Wait()
-            if not character then
-                warn("Player character not found or died")
-                wait(1)
-                break
-            end
-
-            local ores = countOres()
-
-            if oresToMine > 0 then
-                for _, ore in ipairs(ores) do
-                    if not Minning then break end
-                    if mineOre(ore) then
-                        oresMined = oresMined + 1
-                        task.wait(0.5)
-                    end
+            local success, err = pcall(function()
+                local character = player.Character or player.CharacterAdded:Wait()
+                if not character then
+                    warn("Player character not found or died")
+                    wait(1)
+                    return
                 end
-            else
-                wait(1)
-            end
 
-            if oresMined == oresToMine then
-                minedOre = {}
-                oresToMine = 0
-                oresMined = 0
-                wait(1)
-            end
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                if humanoid and humanoid.Health == 0 then
+                    warn("Character is dead. Waiting for respawn...")
+                    character = player.CharacterAdded:Wait()
+                    wait(2)
+                end
 
-            wait(1)
+                local ores = countOres()
+
+                if oresToMine > 0 then
+                    for _, ore in ipairs(ores) do
+                        if not Minning then break end
+                        local mineSuccess, mineErr = pcall(function()
+                            if mineOre(ore) then
+                                oresMined = oresMined + 1
+                                task.wait(0.5)
+                            end
+                        end)
+
+                        if not mineSuccess then
+                            warn("Error mining ore:", mineErr)
+                        end
+                    end
+                else
+                    wait(1)
+                end
+
+                if oresMined == oresToMine then
+                    minedOre = {}
+                    oresToMine = 0
+                    oresMined = 0
+                    wait(1)
+                end
+
+                wait(1)
+            end)
+
+            if not success then
+                warn("Error in mining loop:", err)
+            end
         end
     end,
 })
