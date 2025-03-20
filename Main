@@ -1019,18 +1019,25 @@ local GotoPlayerToggle = location:CreateToggle({
                 while GotoPlayerRepeat do
                     wait(0.1)
 
-                    local targetPlayer = game.Players:FindFirstChild(defaultotherplayer)
-                    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                        local me = game.Players.LocalPlayer.Character
-                        if me and me:FindFirstChild("HumanoidRootPart") then
-                            me:PivotTo(targetPlayer.Character.HumanoidRootPart.CFrame*CFrame.new(0,1,2))
+                    local success, err = pcall(function()
+                        local targetPlayer = game.Players:FindFirstChild(defaultotherplayer)
+                        if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                            local me = game.Players.LocalPlayer.Character
+                            if me and me:FindFirstChild("HumanoidRootPart") then
+                                me:PivotTo(targetPlayer.Character.HumanoidRootPart.CFrame*CFrame.new(0,1,2))
+                            end
                         end
+                    end)
+                    
+                    if not success then
+                        warn(err)
                     end
                 end
             end)
         end
     end,
 })
+
 refreshplayers()
 local map = location:CreateSection("Islands")
 
