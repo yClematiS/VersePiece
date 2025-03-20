@@ -928,12 +928,15 @@ local function interactWithChest(chest)
         for _, child in pairs(chest:GetChildren()) do
             if child:IsA("ProximityPrompt") then
                 child.HoldDuration = 0
-                task.wait(0.1)
-                fireproximityprompt(child)
+                for i = 1, 5 do
+                    task.wait(0.1)
+                    fireproximityprompt(child)
+                end
             end
         end
     end
 end
+
 
 local function lootMaterials()
     local playerGui = game.Players.LocalPlayer:FindFirstChild("PlayerGui")
@@ -984,13 +987,12 @@ local AutoLootChests = MainTab:CreateToggle({
                     IsLootingChest = true
 
                     teleportToChest(chest)
-                    task.wait(0.5) 
+                    task.wait(1) 
 
                     interactWithChest(chest)
-                    task.wait(0.5)
+                    task.wait(1)
 
                     lootMaterials()
-                    task.wait(0.5)
 
                     IsLootingChest = false
                 end
