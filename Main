@@ -966,7 +966,39 @@ end
 
 workspace.Main.DescendantRemoving:Connect(onChestRemoved)
 
+local AutoLootChests = MainTab:CreateToggle({
+    Name = "Auto Loot Chest",
+    CurrentValue = false,
+    Flag = "ALootChest",
+    Callback = function(Value)
+        AutoWLoot = Value
 
+        if not AutoWLoot then
+            IsLootingChest = false
+        end
+
+        while AutoWLoot do
+            task.wait(0.5)
+            for _, chest in pairs(workspace.Main:GetChildren()) do
+                if chest.Name == "Raid Chest" and not lootedChests[chest] then
+                    lootedChests[chest] = true
+                    IsLootingChest = true
+                    task.spawn(function()
+                    teleportToChest(chest)
+                    end)
+                    task.spawn(function()
+                    interactWithChest(chest)
+                    end)
+                    task.wait(1)
+                    lootMaterials()
+
+                    IsLootingChest = false
+                end
+            end
+            IsLootingChest = false
+        end
+    end,
+})
 
 local ItemTap = MainWindow:CreateTab("Items")
 local Mine = ItemTap:CreateSection("Auto Mine Ore")
@@ -991,44 +1023,7 @@ local function mineOre(ore)
 
     humanoidRootPart.CFrame = ore.PrimaryPart.CFrame * CFrame.new(0, 3, 0)
 
-    local camera = game.Workspace.CurrentCameralocal AutoLootChests = MainTab:CreateToggle({
-    Name = "Auto Loot Chest",
-    CurrentValue = false,
-    Flag = "ALootChest",
-    Callback = function(Value)
-        AutoWLoot = Value
-
-        if not AutoWLoot then
-            IsLootingChest = false
-        end
-
-        while AutoWLoot do
-            task.wait(0.5)
-            for _, chest in pairs(workspace.Main:GetChildren()) do
-                if chest.Name == "Raid Chest" and not lootedChests[chest] then
-                    lootedChests[chest] = true
-                    IsLootingChest = true
-
-                   
-                    task.spawn(function()
-                        teleportToChest(chest)
-                    end)
-
-                    task.spawn(function()
-                        interactWithChest(chest)
-                    end)
-
-                    task.wait(1)
-                    lootMaterials()
-
-                    IsLootingChest = false
-                end
-            end
-            IsLootingChest = false
-        end
-    end,
-})
-
+    local camera = game.Workspace.CurrentCamera
     local orePosition = ore.PrimaryPart.Position
     local cameraOffset = Vector3.new(0, 5, 0)
     camera.CFrame = CFrame.new(orePosition + cameraOffset, orePosition)
