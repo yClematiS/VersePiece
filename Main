@@ -913,7 +913,10 @@ local function teleportToChest(chest)
     if chest and chest:FindFirstChild("PrimaryPart") then
         local player = game.Players.LocalPlayer
         if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            player.Character.HumanoidRootPart.CFrame = chest.PrimaryPart.CFrame + Vector3.new(0, 3, 0)
+            for i = 1, 5 do
+                player.Character.HumanoidRootPart.CFrame = chest.PrimaryPart.CFrame + Vector3.new(0, 3, 0)
+                task.wait(0.1)
+            end
         end
     end
 end
