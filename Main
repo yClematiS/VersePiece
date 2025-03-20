@@ -108,6 +108,7 @@ IsMining = false
 IsAutoHit = false
 IsFastHit = false
 IsWorldBoss = false
+IsFindingWhip = false
 
 --FLAG-----------------------------------------------------------------------------------
 
@@ -245,6 +246,11 @@ local FindClosedMob = MainTab:CreateSlider({
          
          if SetHealth and not hitboxThread then
              hitboxThread = task.spawn(function()
+                if not SetHealth and hitboxThread then
+                    task.cancel(hitboxThread)
+                    hitboxThread = nil
+                    return
+                end
                  while SetHealth do
                      task.wait(0.1)
  
@@ -478,29 +484,30 @@ local FindClosedMob = MainTab:CreateSlider({
                  end
                  Sittingsss = nil
              end)
-         elseif not OnMob and Sittingsss then
-            IsOnMob = false
-             Sittingsss = nil
-             local player = game.Players.LocalPlayer
-             local character = player.Character
-             if character then
-                 local humanoid = character:FindFirstChildOfClass("Humanoid")
-                 local hrp = character:FindFirstChild("HumanoidRootPart")
- 
-                 if humanoid then
-                     humanoid.PlatformStand = false
-                 end
-                 if hrp then
-                     for _, obj in pairs(hrp:GetChildren()) do
-                         if obj:IsA("BodyVelocity") then
-                             obj:Destroy()
-                         end
-                     end
-                 end
-             end
-         end
-     end
- })  
+            elseif not OnMob and Sittingsss then
+                IsOnMob = false
+                task.cancel(Sittingsss)
+                Sittingsss = nil
+                local player = game.Players.LocalPlayer
+                local character = player.Character
+                if character then
+                    local humanoid = character:FindFirstChildOfClass("Humanoid")
+                    local hrp = character:FindFirstChild("HumanoidRootPart")
+    
+                    if humanoid then
+                        humanoid.PlatformStand = false
+                    end
+                    if hrp then
+                        for _, obj in pairs(hrp:GetChildren()) do
+                            if obj:IsA("BodyVelocity") then
+                                obj:Destroy()
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    })
 
  Bosses = {
     "Lancer [Lv.???]",
@@ -662,15 +669,17 @@ local MinningToggle = MainTab:CreateToggle({
         Minning = Value
         local oreFolder = workspace.Main.Ore
         local player = game.Players.LocalPlayer
-
-        if IsWorldBoss then
+        if IsWorldBoss or IsFindingWhip then
+            oresToMine = 0
+            oresMined = 0
             return
         end
+
         IsMining = true
         if not Minning then
             IsMining = false
         end
-        
+
         while Minning do
             local character = player.Character or player.CharacterAdded:Wait()
             if not character then
@@ -681,8 +690,8 @@ local MinningToggle = MainTab:CreateToggle({
 
             if not Minning then break end
             local ores = {}
-            local oresToMine = 0
-            local oresMined = 0
+            oresToMine = 0
+            oresMined = 0
 
             for _, ore in pairs(oreFolder:GetChildren()) do
                 if ore:IsA("Model") and ore.Name == "Ore" then
@@ -718,6 +727,52 @@ local MinningToggle = MainTab:CreateToggle({
 
             wait(1)
         end
+    end,
+})
+
+local Wisp = MainTab:CreateSection("Auto Find Wisp")
+findingwisp = false
+local Afindwisp = MainTab:CreateToggle({
+    Name = "Auto Find Wisp",
+    CurrentValue = false,
+    Flag = "AFWisp",
+    Callback = function(Value)
+        findingwisp = Value
+        local me = game.Players.LocalPlayer.Character
+
+        if not me or not me:FindFirstChild("HumanoidRootPart") then
+            return
+        end
+        if findingwisp then
+        while findingwisp do
+            task.wait(1)
+
+            local whereiswisp = workspace:FindFirstChild("Main")
+            if whereiswisp then
+                whereiswisp = whereiswisp:FindFirstChild("Wisp")
+            end
+
+            if whereiswisp then
+                for _, wisp in pairs(whereiswisp:GetChildren()) do
+                    if wisp:IsA("Model") then
+                        IsFindingWhip = true
+                        local insidewisp = wisp:FindFirstChild("Torso")
+                        if insidewisp then
+                            local ininwisp = insidewisp:FindFirstChildOfClass("ProximityPrompt")
+                            if ininwisp then
+                                me.HumanoidRootPart.CFrame = insidewisp.CFrame
+                                ininwisp.HoldDuration = 0
+                                fireproximityprompt(ininwisp, 1)
+                                IsFindingWhip = false
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    else
+        IsFindingWhip = false
+    end
     end,
 })
 
@@ -797,12 +852,16 @@ local AutoEquipToggle = AutoSkill:CreateToggle({
     Callback = function(Value)
         ATools = Value
         if ATools then
-            task.spawn(function()
+            equipTask = task.spawn(function()
                 while ATools do
                     equipToolToCharacter()
                     task.wait(0.1)
                 end
             end)
+        else
+            if equipTask then
+                task.cancel(equipTask)
+            end
         end
     end,
 })
@@ -853,42 +912,47 @@ local AutoAttack = AutoSkill:CreateToggle({
 
 local quickautoattack = false
 local count = 1
+local attackTask
 local quickattack = AutoSkill:CreateToggle({
     Name = "Auto Fast Hit [Animation]",
     CurrentValue = false,
     Flag = "quickautoattack",
     Callback = function(Value)
         quickautoattack = Value
-        while quickautoattack do
-            local player = game.Players.LocalPlayer
-            local equippedTool = player.Character and player.Character:FindFirstChildOfClass("Tool")
+        
+        if quickautoattack then
+            attackTask = task.spawn(function()
+                while quickautoattack do
+                    local player = game.Players.LocalPlayer
+                    local equippedTool = player.Character and player.Character:FindFirstChildOfClass("Tool")
 
-            if equippedTool then
-                local toolstype = equippedTool:FindFirstChildOfClass("BoolValue")
-                if toolstype then
-                    local args = {
-                        [1] = "Server",
-                        [2] = toolstype.Name,
-                        [3] = "M1s", 
-                        [4] = count,
-                        [5] = equippedTool.Name
-                    }
-                    task.spawn(function()
-                        game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
-                    end)
-                    
-                    count = count + 1
-                    if count > 5 then
-                        count = 1
+                    if equippedTool then
+                        local toolstype = equippedTool:FindFirstChildOfClass("BoolValue")
+                        if toolstype then
+                            local args = {
+                                [1] = "Server",
+                                [2] = toolstype.Name,
+                                [3] = "M1s", 
+                                [4] = count,
+                                [5] = equippedTool.Name
+                            }
+                            task.spawn(function()
+                                game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
+                            end)
+                            
+                            count = count + 1
+                            if count > 5 then
+                                count = 1
+                            end
+                        end
                     end
+
+                    task.wait(0.01)
                 end
-            end
-
-            task.wait(0.01)
-
-            if not quickautoattack then 
-                IsFastHit = false
-                break 
+            end)
+        else
+            if attackTask then
+                task.cancel(attackTask)
             end
         end
     end
@@ -967,6 +1031,29 @@ local spamskill = AutoSkill:CreateToggle({
 
             task.wait(0.5)
             if not spamskill then break end
+        end
+    end
+})
+
+local autoabilly = false
+local autoabilly = AutoSkill:CreateToggle({
+    Name = "Auto Ability",
+    CurrentValue = false,
+    Flag = "skillz",
+    Callback = function(Value)
+        autoabilly = Value
+        while autoabilly do
+            pcall(function()
+                local args = {
+                    [1] = "Server",
+                    [2] = "Misc",
+                    [3] = "Ability"
+                }
+                
+                game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
+            end)
+            task.wait(0.5)
+            if not autoabilly then break end
         end
     end
 })
