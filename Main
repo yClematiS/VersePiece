@@ -666,6 +666,7 @@ local MinningToggle = MainTab:CreateToggle({
     Flag = "AOre",
     Callback = function(Value)
         Minning = Value
+        IsMining = true
         local oreFolder = workspace.Main.Ore
         local player = game.Players.LocalPlayer
 
@@ -690,7 +691,6 @@ local MinningToggle = MainTab:CreateToggle({
                 wait(1)
                 break
             end
-            IsMining = true
 
             local ores = {}
             oresToMine = 0
