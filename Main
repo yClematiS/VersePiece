@@ -1418,14 +1418,13 @@ local Maxzoom = MiscTab:CreateToggle({
 })
 
 local PowerSaving = MiscTab:CreateSection("Power Saving Mode")
-
 local blackScreen
 
 function createBlackScreen()
     if not blackScreen then
         blackScreen = Instance.new("ScreenGui")
         blackScreen.Name = "BlackScreen"
-        blackScreen.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+        blackScreen.Parent = game:GetService("CoreGui")
 
         local frame = Instance.new("Frame")
         frame.Size = UDim2.new(1, 0, 1, 0)
@@ -1483,6 +1482,7 @@ local savepower = MiscTab:CreateToggle({
         end
     end,
 })
+
 
 local ClearMobs = MiscTab:CreateSection("Clear All Loaded Mobs")
 local ClearMob = MiscTab:CreateButton({
