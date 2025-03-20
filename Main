@@ -915,7 +915,7 @@ local function teleportToChest(chest)
         if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             for i = 1, 5 do
                 player.Character.HumanoidRootPart.CFrame = chest.PrimaryPart.CFrame + Vector3.new(0, 3, 0)
-                task.wait(0.1)
+                task.wait(0.2)
             end
         end
     end
@@ -927,7 +927,7 @@ local function interactWithChest(chest)
             if child:IsA("ProximityPrompt") then
                 child.HoldDuration = 0
                 for i = 1, 5 do
-                    task.wait(0.1)
+                    task.wait(0.2)
                     fireproximityprompt(child)
                 end
             end
@@ -966,36 +966,7 @@ end
 
 workspace.Main.DescendantRemoving:Connect(onChestRemoved)
 
-local AutoLootChests = MainTab:CreateToggle({
-    Name = "Auto Loot Chest",
-    CurrentValue = false,
-    Flag = "ALootChest",
-    Callback = function(Value)
-        AutoWLoot = Value
 
-        if not AutoWLoot then
-            IsLootingChest = false
-        end
-
-        while AutoWLoot do
-            task.wait(0.5)
-            for _, chest in pairs(workspace.Main:GetChildren()) do
-                if chest.Name == "Raid Chest" and not lootedChests[chest] then
-                    lootedChests[chest] = true
-                    IsLootingChest = true
-
-                    teleportToChest(chest)
-                    interactWithChest(chest)
-                    task.wait(1)
-                    lootMaterials()
-
-                    IsLootingChest = false
-                end
-            end
-            IsLootingChest = false
-        end
-    end,
-})
 
 local ItemTap = MainWindow:CreateTab("Items")
 local Mine = ItemTap:CreateSection("Auto Mine Ore")
@@ -1020,7 +991,44 @@ local function mineOre(ore)
 
     humanoidRootPart.CFrame = ore.PrimaryPart.CFrame * CFrame.new(0, 3, 0)
 
-    local camera = game.Workspace.CurrentCamera
+    local camera = game.Workspace.CurrentCameralocal AutoLootChests = MainTab:CreateToggle({
+    Name = "Auto Loot Chest",
+    CurrentValue = false,
+    Flag = "ALootChest",
+    Callback = function(Value)
+        AutoWLoot = Value
+
+        if not AutoWLoot then
+            IsLootingChest = false
+        end
+
+        while AutoWLoot do
+            task.wait(0.5)
+            for _, chest in pairs(workspace.Main:GetChildren()) do
+                if chest.Name == "Raid Chest" and not lootedChests[chest] then
+                    lootedChests[chest] = true
+                    IsLootingChest = true
+
+                   
+                    task.spawn(function()
+                        teleportToChest(chest)
+                    end)
+
+                    task.spawn(function()
+                        interactWithChest(chest)
+                    end)
+
+                    task.wait(1)
+                    lootMaterials()
+
+                    IsLootingChest = false
+                end
+            end
+            IsLootingChest = false
+        end
+    end,
+})
+
     local orePosition = ore.PrimaryPart.Position
     local cameraOffset = Vector3.new(0, 5, 0)
     camera.CFrame = CFrame.new(orePosition + cameraOffset, orePosition)
