@@ -109,10 +109,293 @@ IsAutoHit = false
 IsFastHit = false
 IsWorldBoss = false
 IsFindingWhip = false
+IsLootingChest = false
 
 --FLAG-----------------------------------------------------------------------------------
 
 local MainTab = MainWindow:CreateTab("Auto Farm")
+
+local Tools = MainTab:CreateSection("Tools")
+local tool = {}
+local playertools
+local function refreshTools()
+    tool = {}
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    if character then
+        for _, obj in pairs(character:GetChildren()) do
+            if obj:IsA("Tool") then
+                table.insert(tool, obj.Name)
+            end
+        end
+    end
+    
+    for _, obj in pairs(player.Backpack:GetChildren()) do
+        if obj:IsA("Tool") then
+            table.insert(tool, obj.Name)
+        end
+    end
+
+    if playertools then
+        playertools:Refresh(tool)
+    end
+end
+
+local player = game.Players.LocalPlayer
+local ATools = false
+local defaulttool = ""
+
+local function equipToolToCharacter()
+    local character = player.Character
+    if character and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0 then
+        local tool = player.Backpack:FindFirstChild(defaulttool)
+        if tool then
+            local success, errorMessage = pcall(function()
+                tool.Parent = character
+            end)
+            if not success then
+                warn("Error equipping tool: ", errorMessage)
+            end
+        end
+    end
+end
+
+playertools = MainTab:CreateDropdown({
+    Name = "Select Tool",
+    Options = tool,
+    CurrentOption = defaulttool,
+    MultipleOptions = false,
+    Flag = "EquipTool",
+    Callback = function(Option)
+        local selected = type(Option) == "table" and Option[1] or Option
+        if selected and table.find(tool, selected) then
+            defaulttool = selected
+        end
+    end,
+})
+
+local refreshdropdowntool = MainTab:CreateButton({
+    Name = "Refresh Tools",
+    Callback = function()
+        refreshTools()
+    end,
+})
+
+refreshTools()
+
+local AutoEquipToggle = MainTab:CreateToggle({
+    Name = "Auto Equip Selected Tool",
+    CurrentValue = false,
+    Flag = "EquipSelectedTool",
+    Callback = function(Value)
+        ATools = Value
+        if ATools then
+            equipTask = task.spawn(function()
+                while ATools do
+                    equipToolToCharacter()
+                    task.wait(0.1)
+                end
+            end)
+        else
+            if equipTask then
+                task.cancel(equipTask)
+            end
+        end
+    end,
+})
+
+player.CharacterAdded:Connect(function()
+    if ATools then
+        task.wait(1)
+        equipToolToCharacter()
+    end
+end)
+
+local autoattack = false
+local AutoAttack = MainTab:CreateToggle({
+    Name = "Auto Hit [No Animation]",
+    CurrentValue = false,
+    Flag = "AHit",
+    Callback = function(Value)
+        autoattack = Value
+        while autoattack do
+            local success, err = pcall(function()
+                local player = game.Players.LocalPlayer
+                local equippedTool = player.Character and player.Character:FindFirstChildOfClass("Tool")
+
+                if not equippedTool then
+                    error("No tool equipped.")
+                end
+
+                local toolstype = equippedTool:FindFirstChildOfClass("BoolValue")
+                if not toolstype then
+                    error("No item type found in the tool.")
+                end
+
+                local args = {
+                    [1] = "Server",
+                    [2] = toolstype.Name,
+                    [3] = "M1s", 
+                    [4] = nil,
+                    [5] = equippedTool.Name
+                }
+                game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
+            end)
+
+            task.wait(0.12)
+            if not autoattack then break end
+        end
+    end
+})
+
+local quickautoattack = false
+local count = 1
+local attackTask
+local quickattack = MainTab:CreateToggle({
+    Name = "Auto Fast Hit [Animation]",
+    CurrentValue = false,
+    Flag = "quickautoattack",
+    Callback = function(Value)
+        quickautoattack = Value
+        
+        if quickautoattack then
+            attackTask = task.spawn(function()
+                while quickautoattack do
+                    local player = game.Players.LocalPlayer
+                    local equippedTool = player.Character and player.Character:FindFirstChildOfClass("Tool")
+
+                    if equippedTool then
+                        local toolstype = equippedTool:FindFirstChildOfClass("BoolValue")
+                        if toolstype then
+                            local args = {
+                                [1] = "Server",
+                                [2] = toolstype.Name,
+                                [3] = "M1s", 
+                                [4] = count,
+                                [5] = equippedTool.Name
+                            }
+                            task.spawn(function()
+                                game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
+                            end)
+                            
+                            count = count + 1
+                            if count > 5 then
+                                count = 1
+                            end
+                        end
+                    end
+
+                    task.wait(0.01)
+                end
+            end)
+        else
+            if attackTask then
+                task.cancel(attackTask)
+            end
+        end
+    end
+})
+
+local Skills = MainTab:CreateSection("Skill Selection")
+secskills = {
+    ["Skill 1"] = "Move1",
+    ["Skill 2"] = "Move2",
+    ["Skill 3"] = "Move3",
+    ["Skill 4"] = "Move4",
+    ["Skill 5"] = "Move5",
+}
+defaultsecskills = {}
+
+local skillsecdropdown = MainTab:CreateDropdown({
+    Name = "Select Skill",
+    Options = {"Skill 1", "Skill 2", "Skill 3", "Skill 4", "Skill 5"},
+    CurrentOption = {},
+    MultipleOptions = true,
+    Flag = "Select Skill",
+    Callback = function(Options)
+        defaultsecskills = {}
+
+        for _, selected in ipairs(Options) do
+            if secskills[selected] then
+                table.insert(defaultsecskills, secskills[selected])
+            end
+        end
+    end,
+})
+
+local spamskill = false
+local spamskill = MainTab:CreateToggle({
+    Name = "Auto Skills",
+    CurrentValue = false,
+    Flag = "skillz",
+    Callback = function(Value)
+        spamskill = Value
+        while spamskill do
+            local success, err = pcall(function()
+                if #defaultsecskills == 0 then
+                    error("No skill selected.")
+                end
+
+                local player = game.Players.LocalPlayer
+                local equippedTool = player.Character and player.Character:FindFirstChildOfClass("Tool")
+
+                if not equippedTool then
+                    error("No tool equipped.")
+                end
+
+                local toolstype = equippedTool:FindFirstChildOfClass("BoolValue")
+                if toolstype.Name == "Fruit" or "Sword" then
+                    combattype = toolstype.Name
+                end
+                if toolstype.Name == "Combat" then
+                    combattype = "Special"
+                end
+                if not toolstype then
+                    error("No item type found in the tool.")
+                end
+
+                for _, skill in ipairs(defaultsecskills) do
+                    local args = {
+                        [1] = "Server",
+                        [2] = combattype,
+                        [3] = skill,
+                        [4] = true,
+                        [5] = equippedTool.Name
+                    }
+                    game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
+                    task.wait(0.2)
+                end
+            end)
+
+            task.wait(0.5)
+            if not spamskill then break end
+        end
+    end
+})
+
+local autoabilly = false
+local autoabilly = MainTab:CreateToggle({
+    Name = "Auto Ability",
+    CurrentValue = false,
+    Flag = "skillz",
+    Callback = function(Value)
+        autoabilly = Value
+        while autoabilly do
+            pcall(function()
+                local args = {
+                    [1] = "Server",
+                    [2] = "Misc",
+                    [3] = "Ability"
+                }
+                
+                game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
+            end)
+            task.wait(0.5)
+            if not autoabilly then break end
+        end
+    end
+})
+
 local InstantKill = MainTab:CreateSection("Kill Aura")
 killmobpercent = {
     ["90%"] = 0.90,
@@ -557,6 +840,11 @@ local AutoBosses = MainTab:CreateToggle({
         AutoWBoss = Value
         while AutoWBoss do
             task.wait(0.1)
+
+            if IsLootingChest then
+                return
+            end
+
             for _, bossName in pairs(SecBosses) do
                 local bossLocation = nil
                 
@@ -623,7 +911,84 @@ local AutoBosses = MainTab:CreateToggle({
     end,
 })
 
-local Mine = MainTab:CreateSection("Auto Mine Ore")
+AutoWLoot = false
+
+local function teleportToChest(chest)
+    if chest and chest:FindFirstChild("PrimaryPart") then
+        local player = game.Players.LocalPlayer
+        if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            player.Character.HumanoidRootPart.CFrame = chest.PrimaryPart.CFrame + Vector3.new(0, 3, 0)
+        end
+    end
+end
+
+local function interactWithChest(chest)
+    if chest then
+        for _, child in pairs(chest:GetChildren()) do
+            if child:IsA("ProximityPrompt") then
+                child.HoldDuration = 0
+                task.wait(0.1)
+                fireproximityprompt(child)
+            end
+        end
+    end
+end
+
+local function lootMaterials()
+    local playerGui = game.Players.LocalPlayer:FindFirstChild("PlayerGui")
+    if not playerGui then return end
+
+    local lootGui = playerGui:FindFirstChild("Loot")
+    if not lootGui then return end
+
+    local mainFrame = lootGui:FindFirstChild("Main")
+    if not mainFrame then return end
+
+    local invFrame = mainFrame:FindFirstChild("Iinv")
+    if not invFrame then return end
+
+    local materialFrame = invFrame:FindFirstChild("Material")
+    if not materialFrame then return end
+
+    local cancelButton = invFrame:FindFirstChild("Cancel")
+    if cancelButton then
+        cancelButton.Parent = materialFrame
+    end
+end
+
+local AutoLootChests = MainTab:CreateToggle({
+    Name = "Auto Loot Chest",
+    CurrentValue = false,
+    Flag = "ALootChest",
+    Callback = function(Value)
+        AutoWLoot = Value
+
+        if not AutoWLoot then
+            IsLootingChest = false
+        end
+        while AutoWLoot do
+            task.wait(0.5)
+            for _, chest in pairs(workspace.Main:GetChildren()) do
+                if chest.Name == "Raid Chest" then
+                    IsLootingChest = true
+                    teleportToChest(chest)
+                    task.wait(0.5) 
+
+                    interactWithChest(chest)
+                    task.wait(0.5)
+
+                    lootMaterials()
+                    task.wait(0.5)
+
+                    IsLootingChest = false
+                end
+            end
+        end
+    end,
+})
+
+local ItemTap = MainWindow:CreateTab("Items")
+local Mine = ItemTap:CreateSection("Auto Mine Ore")
 local Minning = false
 local minedOre = {}
 local oresToMine = 0
@@ -686,7 +1051,7 @@ local function countOres()
     return ores
 end
 
-local MinningToggle = MainTab:CreateToggle({
+local MinningToggle = ItemTap:CreateToggle({
     Name = "Auto Mine Ore",
     CurrentValue = false,
     Flag = "AOre",
@@ -695,7 +1060,7 @@ local MinningToggle = MainTab:CreateToggle({
         IsMining = true
         local player = game.Players.LocalPlayer
 
-        if IsWorldBoss or IsFindingWhip then
+        if IsWorldBoss or IsFindingWhip or IsLootingChest then
             minedOre = {}
             countOres()
             return
@@ -760,9 +1125,9 @@ local MinningToggle = MainTab:CreateToggle({
     end,
 })
 
-local Wisp = MainTab:CreateSection("Auto Find Wisp")
+local Wisp = ItemTap:CreateSection("Auto Find Wisp")
 findingwisp = false
-local Afindwisp = MainTab:CreateToggle({
+local Afindwisp = ItemTap:CreateToggle({
     Name = "Auto Find Wisp",
     CurrentValue = false,
     Flag = "AFWisp",
@@ -773,319 +1138,59 @@ local Afindwisp = MainTab:CreateToggle({
         if not me or not me:FindFirstChild("HumanoidRootPart") then
             return
         end
-        if findingwisp then
-        while findingwisp do
-            task.wait(1)
-
-            local whereiswisp = workspace:FindFirstChild("Main")
-            if whereiswisp then
-                whereiswisp = whereiswisp:FindFirstChild("Wisp")
-            end
-
-            if whereiswisp then
-                for _, wisp in pairs(whereiswisp:GetChildren()) do
-                    if wisp:IsA("Model") then
-                        IsFindingWhip = true
-                        local insidewisp = wisp:FindFirstChild("Torso")
-                        if insidewisp then
-                            local ininwisp = insidewisp:FindFirstChildOfClass("ProximityPrompt")
-                            if ininwisp then
-                                me.HumanoidRootPart.CFrame = insidewisp.CFrame
-                                ininwisp.HoldDuration = 0
-                                fireproximityprompt(ininwisp, 1)
-                                IsFindingWhip = false
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    else
-        IsFindingWhip = false
-    end
-    end,
-})
-
-local AutoSkill = MainWindow:CreateTab("Tools")
-local Tools = AutoSkill:CreateSection("Tools")
-local tool = {}
-local playertools
-local function refreshTools()
-    tool = {}
-    local player = game.Players.LocalPlayer
-    local character = player.Character
-    if character then
-        for _, obj in pairs(character:GetChildren()) do
-            if obj:IsA("Tool") then
-                table.insert(tool, obj.Name)
-            end
-        end
-    end
-    
-    for _, obj in pairs(player.Backpack:GetChildren()) do
-        if obj:IsA("Tool") then
-            table.insert(tool, obj.Name)
-        end
-    end
-
-    if playertools then
-        playertools:Refresh(tool)
-    end
-end
-
-local player = game.Players.LocalPlayer
-local ATools = false
-local defaulttool = ""
-
-local function equipToolToCharacter()
-    local character = player.Character
-    if character and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0 then
-        local tool = player.Backpack:FindFirstChild(defaulttool)
-        if tool then
-            local success, errorMessage = pcall(function()
-                tool.Parent = character
-            end)
-            if not success then
-                warn("Error equipping tool: ", errorMessage)
-            end
-        end
-    end
-end
-
-playertools = AutoSkill:CreateDropdown({
-    Name = "Select Tool",
-    Options = tool,
-    CurrentOption = defaulttool,
-    MultipleOptions = false,
-    Flag = "EquipTool",
-    Callback = function(Option)
-        local selected = type(Option) == "table" and Option[1] or Option
-        if selected and table.find(tool, selected) then
-            defaulttool = selected
-        end
-    end,
-})
-
-local refreshdropdowntool = AutoSkill:CreateButton({
-    Name = "Refresh Tools",
-    Callback = function()
-        refreshTools()
-    end,
-})
-
-refreshTools()
-
-local AutoEquipToggle = AutoSkill:CreateToggle({
-    Name = "Auto Equip Selected Tool",
-    CurrentValue = false,
-    Flag = "EquipSelectedTool",
-    Callback = function(Value)
-        ATools = Value
-        if ATools then
-            equipTask = task.spawn(function()
-                while ATools do
-                    equipToolToCharacter()
-                    task.wait(0.1)
-                end
-            end)
-        else
-            if equipTask then
-                task.cancel(equipTask)
-            end
-        end
-    end,
-})
-
-player.CharacterAdded:Connect(function()
-    if ATools then
-        task.wait(1)
-        equipToolToCharacter()
-    end
-end)
-
-local autoattack = false
-local AutoAttack = AutoSkill:CreateToggle({
-    Name = "Auto Hit [No Animation]",
-    CurrentValue = false,
-    Flag = "AHit",
-    Callback = function(Value)
-        autoattack = Value
-        while autoattack do
-            local success, err = pcall(function()
-                local player = game.Players.LocalPlayer
-                local equippedTool = player.Character and player.Character:FindFirstChildOfClass("Tool")
-
-                if not equippedTool then
-                    error("No tool equipped.")
-                end
-
-                local toolstype = equippedTool:FindFirstChildOfClass("BoolValue")
-                if not toolstype then
-                    error("No item type found in the tool.")
-                end
-
-                local args = {
-                    [1] = "Server",
-                    [2] = toolstype.Name,
-                    [3] = "M1s", 
-                    [4] = nil,
-                    [5] = equippedTool.Name
-                }
-                game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
-            end)
-
-            task.wait(0.12)
-            if not autoattack then break end
-        end
-    end
-})
-
-local quickautoattack = false
-local count = 1
-local attackTask
-local quickattack = AutoSkill:CreateToggle({
-    Name = "Auto Fast Hit [Animation]",
-    CurrentValue = false,
-    Flag = "quickautoattack",
-    Callback = function(Value)
-        quickautoattack = Value
         
-        if quickautoattack then
-            attackTask = task.spawn(function()
-                while quickautoattack do
-                    local player = game.Players.LocalPlayer
-                    local equippedTool = player.Character and player.Character:FindFirstChildOfClass("Tool")
+        if findingwisp then
+            while findingwisp do
+                task.wait(1)
 
-                    if equippedTool then
-                        local toolstype = equippedTool:FindFirstChildOfClass("BoolValue")
-                        if toolstype then
-                            local args = {
-                                [1] = "Server",
-                                [2] = toolstype.Name,
-                                [3] = "M1s", 
-                                [4] = count,
-                                [5] = equippedTool.Name
-                            }
-                            task.spawn(function()
-                                game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
+                if IsWorldBoss or IsLootingChest then
+                    return
+                end
+
+                local whereiswisp = workspace:FindFirstChild("Main")
+                if whereiswisp then
+                    whereiswisp = whereiswisp:FindFirstChild("Wisp")
+                end
+
+                if whereiswisp then
+                    for _, wisp in pairs(whereiswisp:GetChildren()) do
+                        if wisp:IsA("Model") then
+                            IsFindingWhip = true
+                            local success, insidewisp = pcall(function()
+                                return wisp:FindFirstChild("Torso")
                             end)
                             
-                            count = count + 1
-                            if count > 5 then
-                                count = 1
+                            if success and insidewisp then
+                                local success2, ininwisp = pcall(function()
+                                    return insidewisp:FindFirstChildOfClass("ProximityPrompt")
+                                end)
+
+                                if success2 and ininwisp then
+                                    local success3, _ = pcall(function()
+                                        me.HumanoidRootPart.CFrame = insidewisp.CFrame
+                                    end)
+
+                                    if success3 then
+                                        ininwisp.HoldDuration = 0
+                                        fireproximityprompt(ininwisp, 1)
+                                        IsFindingWhip = false
+                                    else
+                                        warn("Failed to teleport to Wisp: HumanoidRootPart might be missing.")
+                                    end
+                                else
+                                    warn("Failed to find ProximityPrompt.")
+                                end
+                            else
+                                warn("Failed to find Wisp Torso.")
                             end
                         end
                     end
-
-                    task.wait(0.01)
                 end
-            end)
+            end
         else
-            if attackTask then
-                task.cancel(attackTask)
-            end
-        end
-    end
-})
-
-local Skills = AutoSkill:CreateSection("Skill Selection")
-secskills = {
-    ["Skill 1"] = "Move1",
-    ["Skill 2"] = "Move2",
-    ["Skill 3"] = "Move3",
-    ["Skill 4"] = "Move4",
-    ["Skill 5"] = "Move5",
-}
-defaultsecskills = {}
-
-local skillsecdropdown = AutoSkill:CreateDropdown({
-    Name = "Select Skill",
-    Options = {"Skill 1", "Skill 2", "Skill 3", "Skill 4", "Skill 5"},
-    CurrentOption = {},
-    MultipleOptions = true,
-    Flag = "Select Skill",
-    Callback = function(Options)
-        defaultsecskills = {}
-
-        for _, selected in ipairs(Options) do
-            if secskills[selected] then
-                table.insert(defaultsecskills, secskills[selected])
-            end
+            IsFindingWhip = false
         end
     end,
-})
-
-local spamskill = false
-local spamskill = AutoSkill:CreateToggle({
-    Name = "Auto Skills",
-    CurrentValue = false,
-    Flag = "skillz",
-    Callback = function(Value)
-        spamskill = Value
-        while spamskill do
-            local success, err = pcall(function()
-                if #defaultsecskills == 0 then
-                    error("No skill selected.")
-                end
-
-                local player = game.Players.LocalPlayer
-                local equippedTool = player.Character and player.Character:FindFirstChildOfClass("Tool")
-
-                if not equippedTool then
-                    error("No tool equipped.")
-                end
-
-                local toolstype = equippedTool:FindFirstChildOfClass("BoolValue")
-                if toolstype.Name == "Fruit" or "Sword" then
-                    combattype = toolstype.Name
-                end
-                if toolstype.Name == "Combat" then
-                    combattype = "Special"
-                end
-                if not toolstype then
-                    error("No item type found in the tool.")
-                end
-
-                for _, skill in ipairs(defaultsecskills) do
-                    local args = {
-                        [1] = "Server",
-                        [2] = combattype,
-                        [3] = skill,
-                        [4] = true,
-                        [5] = equippedTool.Name
-                    }
-                    game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
-                    task.wait(0.2)
-                end
-            end)
-
-            task.wait(0.5)
-            if not spamskill then break end
-        end
-    end
-})
-
-local autoabilly = false
-local autoabilly = AutoSkill:CreateToggle({
-    Name = "Auto Ability",
-    CurrentValue = false,
-    Flag = "skillz",
-    Callback = function(Value)
-        autoabilly = Value
-        while autoabilly do
-            pcall(function()
-                local args = {
-                    [1] = "Server",
-                    [2] = "Misc",
-                    [3] = "Ability"
-                }
-                
-                game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
-            end)
-            task.wait(0.5)
-            if not autoabilly then break end
-        end
-    end
 })
 
 local location = MainWindow:CreateTab("Teleport")
@@ -1302,6 +1407,95 @@ local Maxzoom = MiscTab:CreateToggle({
             game.Players.LocalPlayer.CameraMaxZoomDistance = math.huge
         else
             game.Players.LocalPlayer.CameraMaxZoomDistance = defaultMaxZoom
+        end
+    end,
+})
+
+local PowerSaving = MiscTab:CreateSection("Power Saving Mode")
+
+function createFPSDisplay()
+    if not displayfpsui then
+        displayfpsui = Instance.new("ScreenGui")
+        displayfpsui.Name = "displayfpsui"
+        displayfpsui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+        fpsLabel = Instance.new("TextLabel")
+        fpsLabel.Parent = displayfpsui
+        fpsLabel.Size = UDim2.new(0, 150, 0, 40)
+        fpsLabel.Position = UDim2.new(0.5, -75, 0.8, -50)
+        fpsLabel.BackgroundTransparency = 0.5
+        fpsLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        fpsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        fpsLabel.Font = Enum.Font.SourceSansBold
+        fpsLabel.TextSize = 20
+        fpsLabel.Text = "FPS: 60"
+    end
+
+    local lastTime = tick()
+    local frameCount = 0
+    local runService = game:GetService("RunService")
+
+    fpsConnection = runService.RenderStepped:Connect(function()
+        frameCount = frameCount + 1
+        local currentTime = tick()
+
+        if currentTime - lastTime >= 1 then
+            fpsLabel.Text = "FPS: " .. frameCount
+            frameCount = 0
+            lastTime = currentTime
+        end
+    end)
+end
+
+function removeFPSDisplay()
+    if fpsConnection then
+        fpsConnection:Disconnect()
+        fpsConnection = nil
+    end
+    if displayfpsui then
+        displayfpsui:Destroy()
+        displayfpsui = nil
+    end
+end
+
+_G.psingfps = 10
+local savepowerfps = MiscTab:CreateInput({
+    Name = "FPS Locker",
+    CurrentValue = "",
+    PlaceholderText = "Input Number",
+    RemoveTextAfterFocusLost = false,
+    Flag = "psingfps",
+    Callback = function(psingfps)
+        _G.psingfps = tonumber(psingfps)
+    end,
+})
+
+_G.savingpower = false
+local savepower = MiscTab:CreateToggle({
+    Name = "Power Saving Mode",
+    CurrentValue = false,
+    Flag = "savepower",
+    Callback = function(Value)
+        _G.savingpower = Value
+        local playerGui = game:GetService("Players").LocalPlayer.PlayerGui
+        local runService = game:GetService("RunService")
+        if _G.savingpower then
+            task.spawn(function()
+                while _G.savingpower do
+                    if _G.savingpower then
+                    setfpscap(_G.psingfps)
+                    end
+                    print("FPS set to: " .. _G.psingfps)
+                    task.wait(10)
+                end
+            end)
+
+            runService:Set3dRenderingEnabled(false)
+            createFPSDisplay()
+        else
+            setfpscap(60)
+            runService:Set3dRenderingEnabled(true)
+            removeFPSDisplay()
         end
     end,
 })
