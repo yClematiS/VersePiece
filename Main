@@ -101,9 +101,18 @@ local MainWindow = Rayfield:CreateWindow({
     }
 })
 
+--FLAG-----------------------------------------------------------------------------------
+
+IsOnMob = false
+IsMining = false
+IsAutoHit = false
+IsFastHit = false
+IsWorldBoss = false
+
+--FLAG-----------------------------------------------------------------------------------
+
 local MainTab = MainWindow:CreateTab("Auto Farm")
 local InstantKill = MainTab:CreateSection("Kill Aura")
-
 killmobpercent = {
     ["90%"] = 0.90,
     ["75%"] = 0.75,
@@ -127,18 +136,6 @@ local killmobpercentDropdown = MainTab:CreateDropdown({
     end,
 })
 
-defaultstudmob = 150
-local FindClosedMob = MainTab:CreateSlider({
-    Name = "Find closest mob",
-    Range = {50, 1000},
-    Increment = 10,
-    Suffix = "Stud",
-    CurrentValue = 150,
-    Flag = "closestmobb",
-    Callback = function(Value)
-    defaultstudmob = Value
-    end,
- })
  local hitbox = nil
  local ShowHitbox = false
  local runService = game:GetService("RunService")
@@ -182,7 +179,7 @@ local FindClosedMob = MainTab:CreateSlider({
  end
  
  local function updateHitboxSize()
-     while ShowHitbox do
+    if ShowHitbox then
          task.wait(0.1)
          if hitbox then
              local newSize = Vector3.new(defaultstudmob * 2, defaultstudmob * 2, defaultstudmob * 2)
@@ -190,7 +187,7 @@ local FindClosedMob = MainTab:CreateSlider({
                  hitbox.Size = newSize
              end
          end
-     end
+    end
  end
  
  local ShowHitboxToggle = MainTab:CreateToggle({
@@ -222,6 +219,20 @@ local FindClosedMob = MainTab:CreateSlider({
          task.spawn(updateHitboxSize)
      end
  end) 
+
+ defaultstudmob = 150
+local FindClosedMob = MainTab:CreateSlider({
+    Name = "Find closest mob",
+    Range = {10, 1040},
+    Increment = 10,
+    Suffix = "Stud",
+    CurrentValue = 150,
+    Flag = "closestmobb",
+    Callback = function(Value)
+    defaultstudmob = Value
+    task.spawn(updateHitboxSize)
+    end,
+ })
  
  local SetHealth = false
  local hitboxThread = nil
@@ -308,7 +319,7 @@ local FindClosedMob = MainTab:CreateSlider({
      end
  })
 
- local MobFarmer = MainTab:CreateSection("Teleport to Mob")
+local MobFarmer = MainTab:CreateSection("Teleport to Mob")
 local defaultrange = 6
 local selectedMethod = "Up"
 
@@ -323,6 +334,17 @@ end
 
 local mobMethods = updateMobMethods()
 local defaultmobmethod = mobMethods[selectedMethod]
+local mobDropdown = MainTab:CreateDropdown({
+    Name = "Mob Farm Method",
+    Options = {"Front", "Up", "Down", "Behind"},
+    CurrentOption = selectedMethod,
+    MultipleOptions = false,
+    Flag = "mobmethod",
+    Callback = function(Option)
+        selectedMethod = type(Option) == "table" and Option[1] or Option
+        defaultmobmethod = mobMethods[selectedMethod]
+    end,
+})
 
 local FindClosedMob = MainTab:CreateSlider({
     Name = "Farm Mob Range",
@@ -334,18 +356,6 @@ local FindClosedMob = MainTab:CreateSlider({
     Callback = function(Value)
         defaultrange = Value
         mobMethods = updateMobMethods()
-        defaultmobmethod = mobMethods[selectedMethod]
-    end,
-})
-
-local mobDropdown = MainTab:CreateDropdown({
-    Name = "Mob Farm Method",
-    Options = {"Front", "Up", "Down", "Behind"},
-    CurrentOption = selectedMethod,
-    MultipleOptions = false,
-    Flag = "mobmethod",
-    Callback = function(Option)
-        selectedMethod = type(Option) == "table" and Option[1] or Option
         defaultmobmethod = mobMethods[selectedMethod]
     end,
 })
@@ -368,11 +378,22 @@ local mobDropdown = MainTab:CreateDropdown({
                          local player = game.Players.LocalPlayer
                          local character = player.Character or player.CharacterAdded:Wait()
                          local humanoid = character:FindFirstChildOfClass("Humanoid")
-                         local hrp = character:FindFirstChild("HumanoidRootPart")
- 
+                         local hrp = character:FindFirstChild("HumanoidRootPart")                        
+                         
+                        if IsMining then
+                            return
+                        end
+                        
+                        IsOnMob = true
                          if not humanoid or humanoid.Health <= 0 or not hrp then
+                            IsOnMob = false
                              return
                          end
+
+                         if not IsOnMob then
+                            return
+                         end
+
                          humanoid.PlatformStand = true
  
                          if bodyVelocity then
@@ -458,6 +479,7 @@ local mobDropdown = MainTab:CreateDropdown({
                  Sittingsss = nil
              end)
          elseif not OnMob and Sittingsss then
+            IsOnMob = false
              Sittingsss = nil
              local player = game.Players.LocalPlayer
              local character = player.Character
@@ -480,10 +502,128 @@ local mobDropdown = MainTab:CreateDropdown({
      end
  })  
 
- local Mine = MainTab:CreateSection("Auto Mine Ore")
+ Bosses = {
+    "Lancer [Lv.???]",
+    "Fallen Angel [Lv.???]",
+    "D4C [Lv.???]",
+    "Boss Island",
+    "Skull"
+}
+SecBosses = {}
+
+local WorldBossFarmer = MainTab:CreateSection("Auto World Boss")
+AWBoss = MainTab:CreateDropdown({
+    Name = "Select Boss",
+    Options = Bosses,
+    CurrentOption = {},
+    MultipleOptions = true,
+    Flag = "SelectBoss",
+    Callback = function(Option)
+        SecBosses = type(Option) == "table" and Option or {Option}
+        print("Selected Bosses:", table.concat(SecBosses, ", "))
+    end,
+})
+
+AutoWBoss = false
+local function isBossSpawned(boss)
+    if boss and boss:FindFirstChild("HumanoidRootPart") then
+        local humanoidRootPart = boss.HumanoidRootPart
+        local billboard = humanoidRootPart:FindFirstChildOfClass("BillboardGui")
+        if billboard and billboard.Enabled then
+            return true
+        end
+    end
+    return false
+end
+
+local function teleportToBoss(boss)
+    if boss and boss:FindFirstChild("HumanoidRootPart") then
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = boss.HumanoidRootPart.CFrame
+        print("Teleported to:", boss.Name)
+    end
+end
+
+local AutoBosses = MainTab:CreateToggle({
+    Name = "Auto Goto Boss [If spawned]",
+    CurrentValue = false,
+    Flag = "ABoss",
+    Callback = function(Value)
+        AutoWBoss = Value
+        while AutoWBoss do
+            task.wait(1)
+            for _, bossName in pairs(SecBosses) do
+                local bossLocation = nil
+                
+                if bossName == "Lancer [Lv.???]" then
+                    IsWorldBoss = true
+                    bossLocation = workspace.Main.RaidBoss
+                elseif bossName == "Fallen Angel [Lv.???]" then
+                    IsWorldBoss = true
+                    bossLocation = workspace.Main["Fallen Angel"]
+                elseif bossName == "D4C [Lv.???]" then
+                    IsWorldBoss = true
+                    bossLocation = workspace.Main.Valentine
+                elseif bossName == "Boss Island" then
+                    if workspace.Main:FindFirstChild("Boss") then
+                        for _, boss in pairs(workspace.Main.Boss:GetChildren()) do
+                            if isBossSpawned(boss) then
+                                IsWorldBoss = true
+                                local success, err = pcall(function()
+                                    local player = game.Players.LocalPlayer
+                                    if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                                        player.Character.HumanoidRootPart.CFrame = CFrame.new(-1280.63513, 33.5067902, -990.815186)
+                                        print("Teleported to Boss Island")
+                                    end
+                                end)
+                                if not success then
+                                    warn("Failed to teleport to Boss Island:", err)
+                                end
+                            end
+                        end
+                    end
+                elseif bossName == "Skull" then
+                    if workspace.Main:FindFirstChild("Skull") then
+                        for _, boss in pairs(workspace.Main.Skull:GetChildren()) do
+                            if isBossSpawned(boss) then
+                                IsWorldBoss = true
+                                local success, err = pcall(function()
+                                    local player = game.Players.LocalPlayer
+                                    if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                                        player.Character.HumanoidRootPart.CFrame = CFrame.new(1083.94763, 26.8962345, -1687.422)
+                                        print("Teleported to Skull")
+                                    end
+                                end)
+                                if not success then
+                                    warn("Failed to teleport to Skull:", err)
+                                end
+                            end
+                        end
+                    end
+                end
+
+                if bossLocation then
+                    for _, boss in pairs(bossLocation:GetChildren()) do
+                        if boss.Name == bossName and isBossSpawned(boss) then
+                            local success, err = pcall(function()
+                                teleportToBoss(boss)
+                            end)
+                            if not success then
+                                warn("Failed to teleport to boss:", bossName, err)
+                            end
+                        end
+                    end
+                end
+                IsWorldBoss = false
+            end
+        end
+    end,
+})
+
+local Mine = MainTab:CreateSection("Auto Mine Ore")
 local Minning = false
 local minedOre = {}
 local function mineOre(ore)
+
     local player = game.Players.LocalPlayer
     local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if not humanoidRootPart then return false end
@@ -522,6 +662,14 @@ local MinningToggle = MainTab:CreateToggle({
         Minning = Value
         local oreFolder = workspace.Main.Ore
         local player = game.Players.LocalPlayer
+
+        if IsWorldBoss then
+            return
+        end
+        IsMining = true
+        if not Minning then
+            IsMining = false
+        end
         
         while Minning do
             local character = player.Character or player.CharacterAdded:Wait()
@@ -697,7 +845,7 @@ local AutoAttack = AutoSkill:CreateToggle({
                 game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
             end)
 
-            task.wait(0.1)
+            task.wait(0.12)
             if not autoattack then break end
         end
     end
@@ -738,7 +886,10 @@ local quickattack = AutoSkill:CreateToggle({
 
             task.wait(0.01)
 
-            if not quickautoattack then break end
+            if not quickautoattack then 
+                IsFastHit = false
+                break 
+            end
         end
     end
 })
