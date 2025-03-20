@@ -545,8 +545,7 @@ end
 
 local function teleportToBoss(boss)
     if boss and boss:FindFirstChild("HumanoidRootPart") then
-        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = boss.HumanoidRootPart.CFrame
-        print("Teleported to:", boss.Name)
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = boss.HumanoidRootPart.CFrame*CFrame.new(0,0,defaultrange)
     end
 end
 
@@ -557,7 +556,7 @@ local AutoBosses = MainTab:CreateToggle({
     Callback = function(Value)
         AutoWBoss = Value
         while AutoWBoss do
-            task.wait(1)
+            task.wait(0.1)
             for _, bossName in pairs(SecBosses) do
                 local bossLocation = nil
                 
@@ -579,7 +578,6 @@ local AutoBosses = MainTab:CreateToggle({
                                     local player = game.Players.LocalPlayer
                                     if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                                         player.Character.HumanoidRootPart.CFrame = CFrame.new(-1280.63513, 33.5067902, -990.815186)
-                                        print("Teleported to Boss Island")
                                     end
                                 end)
                                 if not success then
@@ -597,7 +595,6 @@ local AutoBosses = MainTab:CreateToggle({
                                     local player = game.Players.LocalPlayer
                                     if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                                         player.Character.HumanoidRootPart.CFrame = CFrame.new(1083.94763, 26.8962345, -1687.422)
-                                        print("Teleported to Skull")
                                     end
                                 end)
                                 if not success then
