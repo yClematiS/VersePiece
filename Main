@@ -840,11 +840,6 @@ local AutoBosses = MainTab:CreateToggle({
         AutoWBoss = Value
         while AutoWBoss do
             task.wait(0.1)
-
-            if IsLootingChest then
-                return
-            end
-
             for _, bossName in pairs(SecBosses) do
                 local bossLocation = nil
                 
