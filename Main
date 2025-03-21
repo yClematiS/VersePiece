@@ -911,12 +911,12 @@ AutoWLoot = false
 
 local function teleportToChest(chest)
     if chest and chest:FindFirstChild("PrimaryPart") then
+        for i = 1,5 do
+            task.wait(0.25)
         local player = game.Players.LocalPlayer
         if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            for i = 1, 5 do
-                player.Character.HumanoidRootPart.CFrame = chest.PrimaryPart.CFrame + Vector3.new(0, 3, 0)
-                task.wait(0.1)
-            end
+            player.Character.HumanoidRootPart.CFrame = chest.PrimaryPart.CFrame + Vector3.new(0, 2, 0)
+        end
         end
     end
 end
@@ -925,18 +925,18 @@ local function interactWithChest(chest)
     if chest then
         for _, child in pairs(chest:GetChildren()) do
             if child:IsA("ProximityPrompt") then
-                child.RequiresLineOfSight = false
-                child.MaxActiveDistance = 1000
                 child.HoldDuration = 0
+                child.MaxActivationDistance = 1000
+                child.RequiresLineOfSight = false
+                task.wait(0.1)
                 for i = 1, 5 do
-                    task.wait(0.1)
+                    task.wait(0.25)
                     fireproximityprompt(child)
                 end
             end
         end
     end
 end
-
 
 local function lootMaterials()
     local playerGui = game.Players.LocalPlayer:FindFirstChild("PlayerGui")
@@ -960,7 +960,6 @@ local function lootMaterials()
     end
 end
 
-
 local AutoLootChests = MainTab:CreateToggle({
     Name = "Auto Loot Chest",
     CurrentValue = false,
@@ -975,16 +974,14 @@ local AutoLootChests = MainTab:CreateToggle({
         while AutoWLoot do
             task.wait(0.5)
             for _, chest in pairs(workspace.Main:GetChildren()) do
-                if chest.Name == "Raid Chest" then
-                    task.spawn(function()
-                    teleportToChest(chest)                  
-                    end)
-                    task.spawn(function()
+                task.spawn(function()
+                    teleportToChest(chest)
+                end)
+                task.spawn(function()
                     interactWithChest(chest)
-                    end)
-                    task.wait(1)
-                    lootMaterials()
-                end
+                end)
+                task.wait(2)
+                lootMaterials()
             end
         end
     end,
