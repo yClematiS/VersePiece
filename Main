@@ -931,13 +931,20 @@ local function interactWithChest(chest)
     if chest then
         for _, child in pairs(chest:GetChildren()) do
             if child:IsA("ProximityPrompt") then
+                child.HoldDuration = 0
                 child.MaxActivationDistance = 1000
                 child.RequiresLineOfSight = false
                 task.wait(0.1)
                 for i = 1, 5 do
+
+                task.spawn(function ()
                     child:HoldBegin()
                     task.wait(child.HoldDuration)
                     child:HoldEnd()
+                end)
+                task.spawn(function ()
+                    fireproximityprompt(child, 1)
+                end)
                     task.wait(0.25)
                 end
             end
