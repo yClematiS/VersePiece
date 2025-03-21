@@ -112,15 +112,20 @@ IsFindingWhip = false
 IsLootingChest = false
 
 --FLAG-----------------------------------------------------------------------------------
-
 local minedOre = {}
 local oresToMine = 0
 local oresMined = 0
+local isMiningCurrentOre = false
 
 local function mineOre(ore)
+    if isMiningCurrentOre then return false end
+    isMiningCurrentOre = true
     local player = game.Players.LocalPlayer
     local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return false end
+    if not humanoidRootPart then
+        isMiningCurrentOre = false
+        return false
+    end
 
     local prompt = nil
     for _, obj in pairs(ore:GetDescendants()) do
@@ -129,7 +134,10 @@ local function mineOre(ore)
             break
         end
     end
-    if not prompt then return false end
+    if not prompt then
+        isMiningCurrentOre = false
+        return false
+    end
 
     humanoidRootPart.CFrame = ore.PrimaryPart.CFrame * CFrame.new(0, 3, 0)
 
@@ -144,6 +152,7 @@ local function mineOre(ore)
         prompt:InputHoldBegin()
         task.wait(prompt.HoldDuration or 5)
         prompt:InputHoldEnd()
+        isMiningCurrentOre = false
     end)
 
     minedOre[ore] = true
@@ -193,7 +202,6 @@ local function getOreCount()
 
     return count
 end
-
 --ORES-----------------------------------------------------------------------------------
 
 local MainTab = MainWindow:CreateTab("Auto Farm")
@@ -1098,7 +1106,7 @@ local MinningToggle = ItemTap:CreateToggle({
             if IsWorldBoss or IsFindingWhip or IsLootingChest then
                 minedOre = {}
                 countOres()
-                print("⛔ หยุดขุดแร่ชั่วคราวมี World Boss หรือหีบสมบัติ")
+                print("⛔ หยุดขุดแร่ชั่วคราวเนื่องจากมี World Boss หรือหีบสมบัติ")
                 task.wait(1)
                 continue
             end
