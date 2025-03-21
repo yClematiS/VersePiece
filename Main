@@ -856,6 +856,20 @@ local AutoBosses = MainTab:CreateToggle({
             task.wait(0.1)
             local bossFound = false
             
+            local success, err = pcall(function()
+                local player = game.Players.LocalPlayer
+                local character = player and player.Character
+                if not character or character:FindFirstChild("Humanoid") and character.Humanoid.Health <= 0 then
+                    IsWorldBoss = false
+                    return
+                end
+            end)
+            if not success then
+                warn("Error checking character status:", err)
+                IsWorldBoss = false
+                return
+            end
+
             for _, bossName in pairs(SecBosses) do
                 local bossLocation = nil
                 
@@ -878,7 +892,12 @@ local AutoBosses = MainTab:CreateToggle({
                             if not IsWorldBoss then
                                 IsWorldBoss = true
                             end
-                            teleportToBoss(boss)
+                            local success, err = pcall(function()
+                                teleportToBoss(boss)
+                            end)
+                            if not success then
+                                warn("Error teleporting to boss:", err)
+                            end
                             break
                         end
                     end
