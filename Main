@@ -991,7 +991,6 @@ local AutoLootChests = MainTab:CreateToggle({
 })
 
 local ItemTap = MainWindow:CreateTab("Items")
-local Mine = ItemTap:CreateSection("Auto Mine Ore")
 local Minning = false
 local minedOre = {}
 local oresToMine = 0
@@ -1079,16 +1078,12 @@ local MinningToggle = ItemTap:CreateToggle({
             local success, err = pcall(function()
                 local character = player.Character or player.CharacterAdded:Wait()
                 if not character then
-                    warn("Player character not found or died")
-                    wait(1)
-                    return
-                end
-
-                local humanoid = character:FindFirstChildOfClass("Humanoid")
-                if humanoid and humanoid.Health == 0 then
-                    warn("Character is dead. Waiting for respawn...")
-                    character = player.CharacterAdded:Wait()
+                    minedOre = {}
+                    oresToMine = 0
+                    oresMined = 0
                     wait(2)
+                    player.CharacterAdded:Wait()
+                    return
                 end
 
                 local ores = countOres()
