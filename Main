@@ -841,6 +841,12 @@ local function teleportToBoss(boss)
     end
 end
 
+local function resetMining()
+    minedOre = {}
+    oresToMine = 0
+    oresMined = 0
+end
+
 local AutoBosses = MainTab:CreateToggle({
     Name = "Auto Goto Boss [If spawned]",
     CurrentValue = false,
@@ -884,6 +890,7 @@ local AutoBosses = MainTab:CreateToggle({
                                                 break
                                             end
                                         end
+                                        resetMining()
                                         IsWorldBoss = false
                                     end)
                                 end
@@ -910,6 +917,7 @@ local AutoBosses = MainTab:CreateToggle({
                                                 break
                                             end
                                         end
+                                        resetMining()
                                         IsWorldBoss = false
                                     end)
                                 end
