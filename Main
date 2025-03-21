@@ -1077,7 +1077,6 @@ local AutoLootChests = MainTab:CreateToggle({
 })
 
 local ItemTap = MainWindow:CreateTab("Items")
-local Mine = ItemTap:CreateSection("Auto Mine Ore")
 local Minning = false
 local MinningToggle = ItemTap:CreateToggle({
     Name = "Auto Mine Ore",
@@ -1099,10 +1098,9 @@ local MinningToggle = ItemTap:CreateToggle({
             if IsWorldBoss or IsFindingWhip or IsLootingChest then
                 minedOre = {}
                 countOres()
-                getOreCount()
-                print("Skip Mining")
+                print("⛔ หยุดขุดแร่ชั่วคราวมี World Boss หรือหีบสมบัติ")
                 task.wait(1)
-                goto continue
+                continue
             end
 
             local success, err = pcall(function()
@@ -1156,8 +1154,6 @@ local MinningToggle = ItemTap:CreateToggle({
             if not success then
                 warn("Error in mining loop:", err)
             end
-
-            ::continue::
         end
     end,
 })
