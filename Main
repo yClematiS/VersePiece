@@ -910,7 +910,7 @@ local AutoBosses = MainTab:CreateToggle({
 AutoWLoot = false
 
 local function teleportToChest(chest)
-    if chest and chest:FindFirstChild("PrimaryPart") then
+    if chest and chest:IsA("Part") and chest:FindFirstChild("PrimaryPart") then
         for i = 1, 5 do
             task.wait(0.25)
             local player = game.Players.LocalPlayer
@@ -936,12 +936,13 @@ local function interactWithChest(chest)
                 child.RequiresLineOfSight = false
                 task.wait(0.1)
                 for i = 1, 5 do
-
-                task.spawn(function ()
-                    child:InputHoldBegin()
-                    task.wait(child.HoldDuration)
-                    child:InputHoldEnd()
-                end)
+                    task.spawn(function ()
+                        pcall(function()
+                            child:InputHoldBegin()
+                            task.wait(child.HoldDuration)
+                            child:InputHoldEnd()
+                        end)
+                    end)
                     task.wait(0.25)
                 end
             end
@@ -985,27 +986,30 @@ local AutoLootChests = MainTab:CreateToggle({
         while AutoWLoot do
             task.wait(0.5)
             for _, chest in pairs(workspace.Main:GetChildren()) do
-                task.spawn(function()
-                    pcall(function()
-                        teleportToChest(chest)
+                if chest.Name == "Raid Chest" then
+                    task.spawn(function()
+                        pcall(function()
+                            teleportToChest(chest)
+                        end)
                     end)
-                end)
 
-                task.spawn(function()
-                    pcall(function()
-                        interactWithChest(chest)
+                    task.spawn(function()
+                        pcall(function()
+                            interactWithChest(chest)
+                        end)
                     end)
-                end)
 
-                task.wait(2)
+                    task.wait(2)
 
-                pcall(function()
-                    lootMaterials()
-                end)
+                    pcall(function()
+                        lootMaterials()
+                    end)
+                end
             end
         end
     end,
 })
+
 
 local ItemTap = MainWindow:CreateTab("Items")
 local Minning = false
