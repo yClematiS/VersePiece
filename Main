@@ -989,13 +989,22 @@ local AutoLootChests = MainTab:CreateToggle({
             task.wait(0.5)
             for _, chest in pairs(workspace.Main:GetChildren()) do
                 task.spawn(function()
-                    teleportToChest(chest)
+                    pcall(function()
+                        teleportToChest(chest)
+                    end)
                 end)
+
                 task.spawn(function()
-                    interactWithChest(chest)
+                    pcall(function()
+                        interactWithChest(chest)
+                    end)
                 end)
+
                 task.wait(2)
-                lootMaterials()
+
+                pcall(function()
+                    lootMaterials()
+                end)
             end
         end
     end,
