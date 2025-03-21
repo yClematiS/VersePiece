@@ -866,14 +866,23 @@ local AutoBosses = MainTab:CreateToggle({
                         for _, boss in pairs(workspace.Main.Boss:GetChildren()) do
                             if isBossSpawned(boss) then
                                 IsWorldBoss = true
-                                local success, err = pcall(function()
-                                    local player = game.Players.LocalPlayer
-                                    if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                                        player.Character.HumanoidRootPart.CFrame = CFrame.new(-1280.63513, 33.5067902, -990.815186)
-                                    end
-                                end)
-                                if not success then
-                                    warn("Failed to teleport to Boss Island:", err)
+                                local player = game.Players.LocalPlayer
+                                local character = player and player.Character
+                                local hrp = character and character:FindFirstChild("HumanoidRootPart")
+                                
+                                if hrp then
+                                    task.spawn(function()
+                                        while IsWorldBoss and boss and boss.Parent do
+                                            task.wait(0.1)
+                                            local bossRoot = boss:FindFirstChild("HumanoidRootPart")
+                                            if bossRoot then
+                                                hrp.CFrame = bossRoot.CFrame * CFrame.new(0, 0, -5)
+                                            else
+                                                break
+                                            end
+                                        end
+                                        IsWorldBoss = false
+                                    end)
                                 end
                             end
                         end
@@ -883,14 +892,23 @@ local AutoBosses = MainTab:CreateToggle({
                         for _, boss in pairs(workspace.Main.Skull:GetChildren()) do
                             if isBossSpawned(boss) then
                                 IsWorldBoss = true
-                                local success, err = pcall(function()
-                                    local player = game.Players.LocalPlayer
-                                    if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                                        player.Character.HumanoidRootPart.CFrame = CFrame.new(1083.94763, 26.8962345, -1687.422)
-                                    end
-                                end)
-                                if not success then
-                                    warn("Failed to teleport to Skull:", err)
+                                local player = game.Players.LocalPlayer
+                                local character = player and player.Character
+                                local hrp = character and character:FindFirstChild("HumanoidRootPart")
+                                
+                                if hrp then
+                                    task.spawn(function()
+                                        while IsWorldBoss and boss and boss.Parent do
+                                            task.wait(0.1)
+                                            local bossRoot = boss:FindFirstChild("HumanoidRootPart")
+                                            if bossRoot then
+                                                hrp.CFrame = bossRoot.CFrame * CFrame.new(0, 0, -5)
+                                            else
+                                                break
+                                            end
+                                        end
+                                        IsWorldBoss = false
+                                    end)
                                 end
                             end
                         end
