@@ -407,7 +407,6 @@ local autoabilly = MainTab:CreateToggle({
 
 local InstantKill = MainTab:CreateSection("Kill Aura")
 killmobpercent = {
-    ["95%"] = 0.95,
     ["90%"] = 0.90,
     ["75%"] = 0.75,
     ["50%"] = 0.50,
@@ -418,7 +417,7 @@ defaultkillmobpercent = 0.90
 
 local killmobpercentDropdown = MainTab:CreateDropdown({
     Name = "Kill Mob at %",
-    Options = {"95", "90%", "75%", "50%", "25%", "10%"},
+    Options = {"90%", "75%", "50%", "25%", "10%"},
     CurrentOption = "90%",
     MultipleOptions = false,
     Flag = "Inskillpercent",
@@ -851,6 +850,9 @@ local AutoBosses = MainTab:CreateToggle({
         while AutoWBoss do
             task.wait(0.1)
             for _, bossName in pairs(SecBosses) do
+                if not bossName then
+                    IsWorldBoss = false
+                end
                 local bossLocation = nil
                 
                 if bossName == "Lancer [Lv.???]" then
@@ -931,6 +933,7 @@ local AutoBosses = MainTab:CreateToggle({
                 end
                 IsWorldBoss = false
             end
+            IsWorldBoss = false
         end
     end,
 })
