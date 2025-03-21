@@ -1492,6 +1492,51 @@ local ClearMob = MiscTab:CreateButton({
     end,
  })
 
+ local Debugging = MainWindow:CreateTab("Debugging")
+ local MyPath = Debugging:CreateButton({
+     Name = "print",
+     Callback = function()
+         -- ใช้ task.spawn() เพื่อป้องกันการบล็อกจาก error
+         task.spawn(function()
+             -- 🔹 วิธีที่ 1: ใช้ Name และ Debugging
+             print("Button Path: ", Debugging.Name .. " -> " .. MyPath.Name)
+         end)
+ 
+         task.spawn(function()
+             -- 🔹 วิธีที่ 2: ตรวจสอบ Parent
+             if MyPath.Parent then
+                 print("Parent Path: ", MyPath.Parent.Name .. " -> " .. MyPath.Name)
+             else
+                 print("Parent not found!")
+             end
+         end)
+ 
+         task.spawn(function()
+             -- 🔹 วิธีที่ 3: ใช้ GetFullPath() ถ้ามี
+             if MyPath.GetFullPath then
+                 print("Full Path: ", MyPath:GetFullPath())
+             else
+                 print("GetFullPath() not supported!")
+             end
+         end)
+ 
+         task.spawn(function()
+             -- 🔹 วิธีที่ 4: ค้นหาใน Debugging
+             for _, child in pairs(Debugging:GetChildren()) do
+                 if child == MyPath then
+                     print("Found in Tab: ", Debugging.Name .. " -> " .. child.Name)
+                 end
+             end
+         end)
+ 
+         task.spawn(function()
+             -- 🔹 วิธีที่ 5: ตรวจสอบประเภทของอ็อบเจ็กต์
+             print("Object Type: ", typeof(MyPath))
+             print("Raw Object: ", tostring(MyPath))
+         end)
+     end,
+ })
+
 Rayfield:LoadConfiguration()
 
 _G.searcherayfield = true
