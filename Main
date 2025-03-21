@@ -202,6 +202,18 @@ local function getOreCount()
 
     return count
 end
+
+local function stopMiningIfNeeded()
+    if IsWorldBoss or IsFindingWhip or IsLootingChest then
+        minedOre = {}
+        countOres()
+        IsMining = false
+        print("⛔ หยุดขุดแร่ชั่วคราวเนื่องจากมี World Boss หรือหีบสมบัติ")
+        task.wait(1)
+        return true
+    end
+    return false
+end
 --ORES-----------------------------------------------------------------------------------
 
 local MainTab = MainWindow:CreateTab("Auto Farm")
@@ -1096,19 +1108,8 @@ local MinningToggle = ItemTap:CreateToggle({
         local player = game.Players.LocalPlayer
 
         while Minning do
-            if not Minning then
-                minedOre = {}
-                countOres()
-                IsMining = false
-                break
-            end
-
-            if IsWorldBoss or IsFindingWhip or IsLootingChest then
-                minedOre = {}
-                countOres()
-                print("⛔ หยุดขุดแร่ชั่วคราวเนื่องจากมี World Boss หรือหีบสมบัติ")
-                task.wait(1)
-                continue
+            if stopMiningIfNeeded() then
+                return
             end
 
             local success, err = pcall(function()
@@ -1127,7 +1128,6 @@ local MinningToggle = ItemTap:CreateToggle({
                 end
 
                 local ores = countOres()
-
                 local remainingOres = getOreCount()
                 print("Remaining Ores:", remainingOres)
 
