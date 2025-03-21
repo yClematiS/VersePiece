@@ -1177,7 +1177,7 @@ local Afindwisp = ItemTap:CreateToggle({
 
                                     if success3 then
                                         ininwisp.HoldDuration = 0
-                                        fireproximityprompt(ininwisp, 1)
+                                        fireproximityprompt(ininwisp)
                                         IsFindingWhip = false
                                     else
                                         warn("Failed to teleport to Wisp: HumanoidRootPart might be missing.")
