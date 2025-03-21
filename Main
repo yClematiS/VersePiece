@@ -1061,6 +1061,12 @@ local minedOre = {}
 local oresToMine = 0
 local oresMined = 0
 
+local function resetMiningCache()
+    minedOre = {}
+    oresToMine = 0
+    oresMined = 0
+end
+
 local function mineOre(ore)
     local player = game.Players.LocalPlayer
     local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -1127,6 +1133,17 @@ local function countOres()
     return ores
 end
 
+function FixMiningLag()
+    pcall(function ()
+        local me = game.Players.LocalPlayer.Character
+        for _, lagfix in pairs(me:GetChildren()) do
+            if lagfix:IsA("BoolValue") and lagfix.Name == "Mining" then
+                lagfix:Destroy()
+            end
+        end
+    end)
+end
+
 local MinningToggle = ItemTap:CreateToggle({
     Name = "Auto Mine Ore",
     CurrentValue = false,
@@ -1161,7 +1178,7 @@ local MinningToggle = ItemTap:CreateToggle({
                     player.CharacterAdded:Wait()
                     return
                 end
-
+                FixMiningLag()
                 local ores = countOres()
 
                 if oresToMine == 0 and oresMined == 0 then
@@ -1193,9 +1210,7 @@ local MinningToggle = ItemTap:CreateToggle({
 
                 if oresMined == oresToMine then
                     warn("Mined All Resetting Table...")
-                    minedOre = {}
-                    oresToMine = 0
-                    oresMined = 0
+                    resetMiningCache()
                     wait(1)
                 end
 
