@@ -911,12 +911,18 @@ AutoWLoot = false
 
 local function teleportToChest(chest)
     if chest and chest:FindFirstChild("PrimaryPart") then
-        for i = 1,5 do
+        for i = 1, 5 do
             task.wait(0.25)
-        local player = game.Players.LocalPlayer
-        if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            player.Character.HumanoidRootPart.CFrame = chest.PrimaryPart.CFrame + Vector3.new(0, 10, 4)
-        end
+            local player = game.Players.LocalPlayer
+            if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                player.Character.HumanoidRootPart.CFrame = chest.PrimaryPart.CFrame + Vector3.new(0, 10, 4)
+                
+                local camera = game.Workspace.CurrentCamera
+                if camera then
+                    camera.CFrame = CFrame.new(chest.PrimaryPart.Position + Vector3.new(0, 5, 10), chest.PrimaryPart.Position)
+                    camera.FieldOfView = 70
+                end
+            end
         end
     end
 end
@@ -925,13 +931,14 @@ local function interactWithChest(chest)
     if chest then
         for _, child in pairs(chest:GetChildren()) do
             if child:IsA("ProximityPrompt") then
-                child.HoldDuration = 0
                 child.MaxActivationDistance = 1000
                 child.RequiresLineOfSight = false
                 task.wait(0.1)
                 for i = 1, 5 do
+                    child:HoldBegin()
+                    task.wait(child.HoldDuration)
+                    child:HoldEnd()
                     task.wait(0.25)
-                    fireproximityprompt(child)
                 end
             end
         end
