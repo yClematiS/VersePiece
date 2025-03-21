@@ -907,7 +907,6 @@ local AutoBosses = MainTab:CreateToggle({
 })
 
 AutoWLoot = false
-local lootedChests = {}
 
 local function teleportToChest(chest)
     if chest and chest:FindFirstChild("PrimaryPart") then
@@ -958,13 +957,6 @@ local function lootMaterials()
     end
 end
 
-local function onChestRemoved(instance)
-    if lootedChests[instance] then
-        lootedChests[instance] = nil
-    end
-end
-
-workspace.Main.DescendantRemoving:Connect(onChestRemoved)
 
 local AutoLootChests = MainTab:CreateToggle({
     Name = "Auto Loot Chest",
@@ -980,12 +972,14 @@ local AutoLootChests = MainTab:CreateToggle({
         while AutoWLoot do
             task.wait(0.5)
             for _, chest in pairs(workspace.Main:GetChildren()) do
-                if chest.Name == "Raid Chest" and not lootedChests[chest] then
-                    lootedChests[chest] = true
+                if chest.Name == "Raid Chest" then
                     IsLootingChest = true
-
-                    teleportToChest(chest)
+                    task.spawn(function()
+                    teleportToChest(chest)                  
+                    end)
+                    task.spawn(function()
                     interactWithChest(chest)
+                    end)
                     task.wait(1)
                     lootMaterials()
 
