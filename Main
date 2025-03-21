@@ -1137,7 +1137,7 @@ function FixMiningLag()
     pcall(function ()
         local me = game.Players.LocalPlayer.Character
         for _, lagfix in pairs(me:GetChildren()) do
-            if lagfix:IsA("BoolValue") and lagfix.Name == "Mining" then
+            if lagfix:IsA("IntValue") and lagfix.Name == "Mining" then
                 lagfix:Destroy()
             end
         end
