@@ -837,15 +837,14 @@ end
 
 local function teleportToBoss(boss)
     if boss and boss:FindFirstChild("HumanoidRootPart") then
+        IsWorldBoss = true
         game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = boss.HumanoidRootPart.CFrame*CFrame.new(0,0,defaultrange)
     end
 end
 
-local function resetMining()
-    minedOre = {}
-    oresToMine = 0
-    oresMined = 0
-end
+game.Players.LocalPlayer.Character:WaitForChild("Humanoid").Died:Connect(function()
+    IsWorldBoss = false
+end)
 
 local AutoBosses = MainTab:CreateToggle({
     Name = "Auto Goto Boss [If spawned]",
@@ -855,96 +854,40 @@ local AutoBosses = MainTab:CreateToggle({
         AutoWBoss = Value
         while AutoWBoss do
             task.wait(0.1)
+            local bossFound = false
+            
             for _, bossName in pairs(SecBosses) do
-                if not bossName then
-                    IsWorldBoss = false
-                end
                 local bossLocation = nil
                 
                 if bossName == "Lancer [Lv.???]" then
-                    IsWorldBoss = true
                     bossLocation = workspace.Main.RaidBoss
                 elseif bossName == "Fallen Angel [Lv.???]" then
-                    IsWorldBoss = true
                     bossLocation = workspace.Main["Fallen Angel"]
                 elseif bossName == "D4C [Lv.???]" then
-                    IsWorldBoss = true
                     bossLocation = workspace.Main.Valentine
                 elseif bossName == "Boss Island" then
-                    if workspace.Main:FindFirstChild("Boss") then
-                        for _, boss in pairs(workspace.Main.Boss:GetChildren()) do
-                            if isBossSpawned(boss) then
-                                IsWorldBoss = true
-                                local player = game.Players.LocalPlayer
-                                local character = player and player.Character
-                                local hrp = character and character:FindFirstChild("HumanoidRootPart")
-                                
-                                if hrp then
-                                    task.spawn(function()
-                                        while IsWorldBoss and boss and boss.Parent do
-                                            task.wait(0.1)
-                                            local bossRoot = boss:FindFirstChild("HumanoidRootPart")
-                                            if bossRoot then
-                                                hrp.CFrame = bossRoot.CFrame * CFrame.new(0, 0, 5)
-                                            else
-                                                break
-                                            end
-                                        end
-                                        resetMining()
-                                        IsWorldBoss = false
-                                    end)
-                                end
-                            end
-                        end
-                    end
+                    bossLocation = workspace.Main:FindFirstChild("Boss")
                 elseif bossName == "Skull" then
-                    if workspace.Main:FindFirstChild("Skull") then
-                        for _, boss in pairs(workspace.Main.Skull:GetChildren()) do
-                            if isBossSpawned(boss) then
-                                IsWorldBoss = true
-                                local player = game.Players.LocalPlayer
-                                local character = player and player.Character
-                                local hrp = character and character:FindFirstChild("HumanoidRootPart")
-                                
-                                if hrp then
-                                    task.spawn(function()
-                                        while IsWorldBoss and boss and boss.Parent do
-                                            task.wait(0.1)
-                                            local bossRoot = boss:FindFirstChild("HumanoidRootPart")
-                                            if bossRoot then
-                                                hrp.CFrame = bossRoot.CFrame * CFrame.new(0, 0, 5)
-                                            else
-                                                break
-                                            end
-                                        end
-                                        resetMining()
-                                        IsWorldBoss = false
-                                    end)
-                                end
-                            end
-                        end
-                    end
+                    bossLocation = workspace.Main:FindFirstChild("Skull")
                 end
 
                 if bossLocation then
                     for _, boss in pairs(bossLocation:GetChildren()) do
-                        if boss.Name == bossName and isBossSpawned(boss) then
-                            local success, err = pcall(function()
-                                teleportToBoss(boss)
-                            end)
-                            if not success then
-                                warn("Failed to teleport to boss:", bossName, err)
-                                IsWorldBoss = false
+                        if isBossSpawned(boss) then
+                            bossFound = true
+                            if not IsWorldBoss then
+                                IsWorldBoss = true
                             end
-                            IsWorldBoss = false
+                            teleportToBoss(boss)
+                            break
                         end
-                        IsWorldBoss = false
                     end
-                    IsWorldBoss = false
                 end
+            end
+
+            if not bossFound then
                 IsWorldBoss = false
             end
-            IsWorldBoss = false
         end
     end,
 })
@@ -1033,24 +976,25 @@ local AutoLootChests = MainTab:CreateToggle({
             while AutoWLoot do
                 task.wait(0.5)
                 for _, chest in pairs(workspace.Main:GetChildren()) do
-                    if chest.Name == "Raid Chest" then
+                    if chest.Name == "Raid Chest" and not IsLootingChest then
+                        IsLootingChest = true
                         task.spawn(function()
                             pcall(function()
                                 teleportToChest(chest)
                             end)
-                        end)
-
-                        task.spawn(function()
                             pcall(function()
                                 interactWithChest(chest)
                             end)
+
+                            task.wait(2)
+
+                            pcall(function()
+                                lootMaterials()
+                            end)
                         end)
 
-                        task.wait(2)
-
-                        pcall(function()
-                            lootMaterials()
-                        end)
+                        task.wait(3)
+                        IsLootingChest = false
                     end
                 end
             end
@@ -1065,6 +1009,7 @@ local oresToMine = 0
 local oresMined = 0
 
 local function resetMiningCache()
+    warn("Reset Ores!")
     minedOre = {}
     oresToMine = 0
     oresMined = 0
@@ -1094,28 +1039,33 @@ local function mineOre(ore)
     task.wait(0.3)
     prompt.RequiresLineOfSight = false
     prompt:InputHoldBegin()
+    if IsWorldBoss or IsFindingWhip or IsLootingChest then
+        prompt:InputHoldEnd()
+        return false
+    end
     task.wait(prompt.HoldDuration)
+
     prompt:InputHoldEnd()
 
     if prompt.Enabled then
-        warn("ProximityPrompt still true")
-        
-        minedOre = {}
-        oresToMine = 0
-        oresMined = 0
+        warn("ProximityPrompt still true, resetting ores")
+        resetMiningCache()
         return false
     end
 
     minedOre[ore] = true
+    oresMined = oresMined + 1 
+    warn("Mined Ore:", oresMined, "oresToMine:", oresToMine)
+
     return true
 end
 
 local function countOres()
     local oreFolder = workspace.Main.Ore
     local ores = {}
-    oresToMine = 0
-    oresMined = 0
-
+    oresToMine = 0 
+    warn("Counting All Ores")
+    
     for _, ore in pairs(oreFolder:GetChildren()) do
         if ore:IsA("Model") and ore.Name == "Ore" then
             local promptFound = false
@@ -1126,7 +1076,7 @@ local function countOres()
                     break
                 end
             end
-
+            
             if promptFound and not minedOre[ore] then
                 table.insert(ores, ore)
             end
@@ -1142,6 +1092,7 @@ function FixMiningLag()
         for _, lagfix in pairs(me:GetChildren()) do
             if lagfix:IsA("IntValue") and lagfix.Name == "Mining" then
                 lagfix:Destroy()
+                print("Deleted All Mining Cache")
             end
         end
     end)
@@ -1153,69 +1104,55 @@ local MinningToggle = ItemTap:CreateToggle({
     Flag = "AOre",
     Callback = function(Value)
         Minning = Value
-        IsMining = true
-        local player = game.Players.LocalPlayer
 
-        if IsWorldBoss or IsFindingWhip or IsLootingChest then
-            minedOre = {}
-            countOres()
-            return
-        end
-
-        if not Minning then
-            minedOre = {}
-            oresToMine = 0
-            oresMined = 0
-            IsMining = false
+        if not Minning then 
+            resetMiningCache()
             return
         end
 
         while Minning do
+            task.wait(0.2)
             local success, err = pcall(function()
+                local player = game.Players.LocalPlayer
                 local character = player.Character or player.CharacterAdded:Wait()
                 if not character then
-                    minedOre = {}
-                    oresToMine = 0
-                    oresMined = 0
+                    resetMiningCache()
                     wait(2)
-                    player.CharacterAdded:Wait()
                     return
                 end
-                FixMiningLag()
+                print("Retune Status: ", tostring(IsWorldBoss), tostring(IsFindingWhip), tostring(IsLootingChest))
+                if IsWorldBoss or IsFindingWhip or IsLootingChest then
+                    print("Hunting Boss or FindingWisp or LootingChest")
+                    resetMiningCache()
+                    wait(2)
+                    return
+                end
+
+                if FixMiningLag then FixMiningLag() end
                 local ores = countOres()
 
-                if oresToMine == 0 and oresMined == 0 then
+                if #ores == 0 then
                     warn("No Ores Found Resetting...")
-                    minedOre = {}
-                    oresToMine = 0
-                    oresMined = 0
+                    resetMiningCache()
                     wait(2)
                     return
                 end
 
-                if oresToMine > 0 then
-                    for _, ore in ipairs(ores) do
-                        if not Minning then break end
-                        local mineSuccess, mineErr = pcall(function()
-                            if mineOre(ore) then
-                                oresMined = oresMined + 1
-                                task.wait(0.5)
-                            end
-                        end)
+                for _, ore in ipairs(ores) do
+                    if not Minning then break end
+                    local mineSuccess, mineErr = pcall(function()
+                        mineOre(ore)
+                    end)
 
-                        if not mineSuccess then
-                            warn("Error mining ore:", mineErr)
-                        end
+                    if not mineSuccess then
+                        warn("Error mining ore:", mineErr)
                     end
-                else
-                    wait(1)
                 end
 
-                if oresMined == oresToMine then
+                if oresMined >= oresToMine then
                     warn("Mined All Resetting Table...")
                     resetMiningCache()
-                    wait(1)
-                end
+                end                
 
                 wait(1)
             end)
@@ -1226,6 +1163,7 @@ local MinningToggle = ItemTap:CreateToggle({
         end
     end,
 })
+
 
 local Wisp = ItemTap:CreateSection("Auto Find Wisp")
 findingwisp = false
