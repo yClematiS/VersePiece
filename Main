@@ -934,8 +934,11 @@ local AutoBosses = MainTab:CreateToggle({
                             end)
                             if not success then
                                 warn("Failed to teleport to boss:", bossName, err)
+                                IsWorldBoss = false
                             end
+                            IsWorldBoss = false
                         end
+                        IsWorldBoss = false
                     end
                     IsWorldBoss = false
                 end
