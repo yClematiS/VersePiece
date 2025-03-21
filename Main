@@ -899,6 +899,7 @@ local AutoBosses = MainTab:CreateToggle({
                             end
                         end
                     end
+                    IsWorldBoss = false
                 end
                 IsWorldBoss = false
             end
@@ -973,7 +974,6 @@ local AutoLootChests = MainTab:CreateToggle({
             task.wait(0.5)
             for _, chest in pairs(workspace.Main:GetChildren()) do
                 if chest.Name == "Raid Chest" then
-                    IsLootingChest = true
                     task.spawn(function()
                     teleportToChest(chest)                  
                     end)
@@ -982,11 +982,8 @@ local AutoLootChests = MainTab:CreateToggle({
                     end)
                     task.wait(1)
                     lootMaterials()
-
-                    IsLootingChest = false
                 end
             end
-            IsLootingChest = false
         end
     end,
 })
@@ -1176,12 +1173,15 @@ local Afindwisp = ItemTap:CreateToggle({
                                         IsFindingWhip = false
                                     else
                                         warn("Failed to teleport to Wisp: HumanoidRootPart might be missing.")
+                                        IsFindingWhip = false
                                     end
                                 else
                                     warn("Failed to find ProximityPrompt.")
+                                    IsFindingWhip = false
                                 end
                             else
                                 warn("Failed to find Wisp Torso.")
+                                IsFindingWhip = false
                             end
                         end
                     end
