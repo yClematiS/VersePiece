@@ -138,11 +138,13 @@ local function mineOre(ore)
     local cameraOffset = Vector3.new(0, 5, 0)
     camera.CFrame = CFrame.new(orePosition + cameraOffset, orePosition)
 
-    task.wait(0.3)
-    prompt.RequiresLineOfSight = false
-    prompt:InputHoldBegin()
-    task.wait(5)
-    prompt:InputHoldEnd()
+    task.spawn(function()
+        task.wait(0.3)
+        prompt.RequiresLineOfSight = false
+        prompt:InputHoldBegin()
+        task.wait(prompt.HoldDuration or 5)
+        prompt:InputHoldEnd()
+    end)
 
     minedOre[ore] = true
     return true
@@ -172,6 +174,24 @@ local function countOres()
     end
 
     return ores
+end
+
+local function getOreCount()
+    local oreFolder = workspace.Main.Ore
+    local count = 0
+
+    for _, ore in pairs(oreFolder:GetChildren()) do
+        if ore:IsA("Model") and ore.Name == "Ore" then
+            for _, obj in pairs(ore:GetDescendants()) do
+                if obj:IsA("ProximityPrompt") and obj.Enabled then
+                    count = count + 1
+                    break
+                end
+            end
+        end
+    end
+
+    return count
 end
 
 --ORES-----------------------------------------------------------------------------------
@@ -970,17 +990,15 @@ local AutoBosses = MainTab:CreateToggle({
 })
 
 AutoWLoot = false
-local lootedChests = {}
-
 local function teleportToChest(chest)
     if chest and chest:FindFirstChild("PrimaryPart") then
         local player = game.Players.LocalPlayer
         if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             for i = 1, 5 do
-                player.Character.HumanoidRootPart.CFrame = chest.PrimaryPart.CFrame + Vector3.new(0, 3, 0)
-                minedOre = {}
-                countOres()
+                IsLootingChest = true
+                player.Character.HumanoidRootPart.CFrame = chest.PrimaryPart.CFrame + Vector3.new(0, 2, 0)
                 task.wait(0.2)
+                IsLootingChest = false
             end
         end
     end
@@ -992,10 +1010,12 @@ local function interactWithChest(chest)
             if child:IsA("ProximityPrompt") then
                 child.HoldDuration = 0
                 for i = 1, 5 do
+                    IsLootingChest = true
                     task.wait(0.2)
-                    minedOre = {}
-                    countOres()
-                    fireproximityprompt(child)
+                    child:InputHoldBegin()
+                    task.wait(child.HoldDuration)
+                    child:InputHoldEnd()
+                    IsLootingChest = false
                 end
             end
         end
@@ -1025,14 +1045,6 @@ local function lootMaterials()
     end
 end
 
-local function onChestRemoved(instance)
-    if lootedChests[instance] then
-        lootedChests[instance] = nil
-    end
-end
-
-workspace.Main.DescendantRemoving:Connect(onChestRemoved)
-
 local AutoLootChests = MainTab:CreateToggle({
     Name = "Auto Loot Chest",
     CurrentValue = false,
@@ -1047,9 +1059,7 @@ local AutoLootChests = MainTab:CreateToggle({
         while AutoWLoot do
             task.wait(0.5)
             for _, chest in pairs(workspace.Main:GetChildren()) do
-                if chest.Name == "Raid Chest" and not lootedChests[chest] then
-                    lootedChests[chest] = true
-                    IsLootingChest = true
+                if chest.Name == "Raid Chest" then
                     task.spawn(function()
                     teleportToChest(chest)
                     end)
@@ -1078,24 +1088,28 @@ local MinningToggle = ItemTap:CreateToggle({
         IsMining = true
         local player = game.Players.LocalPlayer
 
-        if IsWorldBoss or IsFindingWhip or IsLootingChest then
-            minedOre = {}
-            countOres()
-            return
-        end
-
-        if not Minning then
-            minedOre = {}
-            countOres()
-            IsMining = false
-        end
-
         while Minning do
+            if not Minning then
+                minedOre = {}
+                countOres()
+                IsMining = false
+                break
+            end
+
+            if IsWorldBoss or IsFindingWhip or IsLootingChest then
+                minedOre = {}
+                countOres()
+                getOreCount()
+                print("Skip Mining")
+                task.wait(1)
+                goto continue
+            end
+
             local success, err = pcall(function()
                 local character = player.Character or player.CharacterAdded:Wait()
                 if not character then
                     warn("Player character not found or died")
-                    wait(1)
+                    task.wait(1)
                     return
                 end
 
@@ -1103,10 +1117,13 @@ local MinningToggle = ItemTap:CreateToggle({
                 if humanoid and humanoid.Health == 0 then
                     warn("Character is dead. Waiting for respawn...")
                     character = player.CharacterAdded:Wait()
-                    wait(2)
+                    task.wait(2)
                 end
 
                 local ores = countOres()
+
+                local remainingOres = getOreCount()
+                print("Remaining Ores:", remainingOres)
 
                 if oresToMine > 0 then
                     for _, ore in ipairs(ores) do
@@ -1123,22 +1140,24 @@ local MinningToggle = ItemTap:CreateToggle({
                         end
                     end
                 else
-                    wait(1)
+                    task.wait(1)
                 end
 
                 if oresMined == oresToMine then
                     minedOre = {}
                     oresToMine = 0
                     oresMined = 0
-                    wait(1)
+                    task.wait(1)
                 end
 
-                wait(1)
+                task.wait(1)
             end)
 
             if not success then
                 warn("Error in mining loop:", err)
             end
+
+            ::continue::
         end
     end,
 })
@@ -1191,14 +1210,8 @@ local Afindwisp = ItemTap:CreateToggle({
                                         countOres()
                                         fireproximityprompt(ininwisp, 1)
                                         IsFindingWhip = false
-                                    else
-                                        warn("Failed to teleport to Wisp: HumanoidRootPart might be missing.")
                                     end
-                                else
-                                    warn("Failed to find ProximityPrompt.")
                                 end
-                            else
-                                warn("Failed to find Wisp Torso.")
                             end
                         end
                     end
@@ -1508,6 +1521,52 @@ local ClearMob = MiscTab:CreateButton({
     end
     end,
  })
+
+ local Debugging = MainWindow:CreateTab("Debugging")
+ local MyPath = Debugging:CreateButton({
+     Name = "print",
+     Callback = function()
+         -- ใช้ task.spawn() เพื่อป้องกันการบล็อกจาก error
+         task.spawn(function()
+             -- 🔹 วิธีที่ 1: ใช้ Name และ Debugging
+             print("Button Path: ", Debugging.Name .. " -> " .. MyPath.Name)
+         end)
+ 
+         task.spawn(function()
+             -- 🔹 วิธีที่ 2: ตรวจสอบ Parent
+             if MyPath.Parent then
+                 print("Parent Path: ", MyPath.Parent.Name .. " -> " .. MyPath.Name)
+             else
+                 print("Parent not found!")
+             end
+         end)
+ 
+         task.spawn(function()
+             -- 🔹 วิธีที่ 3: ใช้ GetFullPath() ถ้ามี
+             if MyPath.GetFullPath then
+                 print("Full Path: ", MyPath:GetFullPath())
+             else
+                 print("GetFullPath() not supported!")
+             end
+         end)
+ 
+         task.spawn(function()
+             -- 🔹 วิธีที่ 4: ค้นหาใน Debugging
+             for _, child in pairs(Debugging:GetChildren()) do
+                 if child == MyPath then
+                     print("Found in Tab: ", Debugging.Name .. " -> " .. child.Name)
+                 end
+             end
+         end)
+ 
+         task.spawn(function()
+             -- 🔹 วิธีที่ 5: ตรวจสอบประเภทของอ็อบเจ็กต์
+             print("Object Type: ", typeof(MyPath))
+             print("Raw Object: ", tostring(MyPath))
+         end)
+     end,
+ })
+ 
 
 Rayfield:LoadConfiguration()
 
