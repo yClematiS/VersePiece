@@ -182,7 +182,7 @@ local refreshdropdowntool = MainTab:CreateButton({
 })
 
 refreshTools()
-
+equipTask = nil
 local AutoEquipToggle = MainTab:CreateToggle({
     Name = "Auto Equip Selected Tool",
     CurrentValue = false,
@@ -190,6 +190,9 @@ local AutoEquipToggle = MainTab:CreateToggle({
     Callback = function(Value)
         ATools = Value
         if ATools then
+            if equipTask then
+                task.cancel(equipTask)
+            end
             equipTask = task.spawn(function()
                 while ATools do
                     equipToolToCharacter()
@@ -199,6 +202,7 @@ local AutoEquipToggle = MainTab:CreateToggle({
         else
             if equipTask then
                 task.cancel(equipTask)
+                equipTask = nil
             end
         end
     end,
@@ -250,7 +254,7 @@ local AutoAttack = MainTab:CreateToggle({
 
 local quickautoattack = false
 local count = 1
-local attackTask
+local attackTask = nil
 local quickattack = MainTab:CreateToggle({
     Name = "Auto Fast Hit [Animation]",
     CurrentValue = false,
@@ -259,6 +263,10 @@ local quickattack = MainTab:CreateToggle({
         quickautoattack = Value
         
         if quickautoattack then
+            if attackTask then
+                task.cancel(attackTask)
+                attackTask = nil 
+            end
             attackTask = task.spawn(function()
                 while quickautoattack do
                     local player = game.Players.LocalPlayer
@@ -274,10 +282,9 @@ local quickattack = MainTab:CreateToggle({
                                 [4] = count,
                                 [5] = equippedTool.Name
                             }
-                            task.spawn(function()
-                                game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
-                            end)
-                            
+
+                            game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
+
                             count = count + 1
                             if count > 5 then
                                 count = 1
@@ -291,10 +298,12 @@ local quickattack = MainTab:CreateToggle({
         else
             if attackTask then
                 task.cancel(attackTask)
+                attackTask = nil
             end
         end
     end
 })
+
 
 local Skills = MainTab:CreateSection("Skill Selection")
 secskills = {
@@ -649,26 +658,26 @@ local FindClosedMob = MainTab:CreateSlider({
     end,
 })
 
- local OnMob = false
- local Sittingsss = nil
- local GoToMob = MainTab:CreateToggle({
-     Name = "Go to closest mob",
-     CurrentValue = false,
-     Flag = "OnMob",
-     Callback = function(Value)
-         OnMob = Value
-         if OnMob and not Sittingsss then
-             Sittingsss = task.spawn(function()
-                 local bodyVelocity
-                 while OnMob do
-                     task.wait(0.1)
-                     local success, errorMessage = pcall(function()
-                         local mobFolder = workspace:FindFirstChild("Main")
-                         local player = game.Players.LocalPlayer
-                         local character = player.Character or player.CharacterAdded:Wait()
-                         local humanoid = character:FindFirstChildOfClass("Humanoid")
-                         local hrp = character:FindFirstChild("HumanoidRootPart")                        
-                         
+local OnMob = false
+local Sittingsss = nil
+local bodyVelocity
+local GoToMob = MainTab:CreateToggle({
+    Name = "Go to closest mob",
+    CurrentValue = false,
+    Flag = "OnMob",
+    Callback = function(Value)
+        OnMob = Value
+        if OnMob and not Sittingsss then
+            Sittingsss = task.spawn(function()
+                while OnMob do
+                    task.wait(0.1)
+                    local success, errorMessage = pcall(function()
+                        local mobFolder = workspace:FindFirstChild("Main")
+                        local player = game.Players.LocalPlayer
+                        local character = player.Character or player.CharacterAdded:Wait()
+                        local humanoid = character:FindFirstChildOfClass("Humanoid")
+                        local hrp = character:FindFirstChild("HumanoidRootPart")                        
+                        
                         if IsMining then
                             return
                         end
@@ -767,30 +776,30 @@ local FindClosedMob = MainTab:CreateSlider({
                  end
                  Sittingsss = nil
              end)
-            elseif not OnMob and Sittingsss then
-                IsOnMob = false
-                task.cancel(Sittingsss)
-                Sittingsss = nil
-                local player = game.Players.LocalPlayer
-                local character = player.Character
-                if character then
-                    local humanoid = character:FindFirstChildOfClass("Humanoid")
-                    local hrp = character:FindFirstChild("HumanoidRootPart")
-    
-                    if humanoid then
-                        humanoid.PlatformStand = false
-                    end
-                    if hrp then
-                        for _, obj in pairs(hrp:GetChildren()) do
-                            if obj:IsA("BodyVelocity") then
-                                obj:Destroy()
-                            end
+        elseif not OnMob and Sittingsss then
+            IsOnMob = false
+            task.cancel(Sittingsss)
+            Sittingsss = nil
+            local player = game.Players.LocalPlayer
+            local character = player.Character
+            if character then
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                local hrp = character:FindFirstChild("HumanoidRootPart")
+
+                if humanoid then
+                    humanoid.PlatformStand = false
+                end
+                if hrp then
+                    for _, obj in pairs(hrp:GetChildren()) do
+                        if obj:IsA("BodyVelocity") then
+                            obj:Destroy()
                         end
                     end
                 end
             end
         end
-    })
+    end
+})
 
  Bosses = {
     "Lancer [Lv.???]",
@@ -908,6 +917,7 @@ local AutoBosses = MainTab:CreateToggle({
 })
 
 AutoWLoot = false
+local lootTask = nil
 
 local function teleportToChest(chest)
     if chest and chest:IsA("Part") and chest:FindFirstChild("PrimaryPart") then
@@ -982,34 +992,38 @@ local AutoLootChests = MainTab:CreateToggle({
         if not AutoWLoot then
             IsLootingChest = false
         end
+        if lootTask then
+            task.cancel(lootTask)
+        end
 
-        while AutoWLoot do
-            task.wait(0.5)
-            for _, chest in pairs(workspace.Main:GetChildren()) do
-                if chest.Name == "Raid Chest" then
-                    task.spawn(function()
-                        pcall(function()
-                            teleportToChest(chest)
+        lootTask = task.spawn(function()
+            while AutoWLoot do
+                task.wait(0.5)
+                for _, chest in pairs(workspace.Main:GetChildren()) do
+                    if chest.Name == "Raid Chest" then
+                        task.spawn(function()
+                            pcall(function()
+                                teleportToChest(chest)
+                            end)
                         end)
-                    end)
 
-                    task.spawn(function()
-                        pcall(function()
-                            interactWithChest(chest)
+                        task.spawn(function()
+                            pcall(function()
+                                interactWithChest(chest)
+                            end)
                         end)
-                    end)
 
-                    task.wait(2)
+                        task.wait(2)
 
-                    pcall(function()
-                        lootMaterials()
-                    end)
+                        pcall(function()
+                            lootMaterials()
+                        end)
+                    end
                 end
             end
-        end
+        end)
     end,
 })
-
 
 local ItemTap = MainWindow:CreateTab("Items")
 local Minning = false
