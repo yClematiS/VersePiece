@@ -113,6 +113,69 @@ IsLootingChest = false
 
 --FLAG-----------------------------------------------------------------------------------
 
+local minedOre = {}
+local oresToMine = 0
+local oresMined = 0
+
+local function mineOre(ore)
+    local player = game.Players.LocalPlayer
+    local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return false end
+
+    local prompt = nil
+    for _, obj in pairs(ore:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") and obj.Enabled then
+            prompt = obj
+            break
+        end
+    end
+    if not prompt then return false end
+
+    humanoidRootPart.CFrame = ore.PrimaryPart.CFrame * CFrame.new(0, 3, 0)
+
+    local camera = game.Workspace.CurrentCamera
+    local orePosition = ore.PrimaryPart.Position
+    local cameraOffset = Vector3.new(0, 5, 0)
+    camera.CFrame = CFrame.new(orePosition + cameraOffset, orePosition)
+
+    task.wait(0.3)
+    prompt.RequiresLineOfSight = false
+    prompt:InputHoldBegin()
+    task.wait(5)
+    prompt:InputHoldEnd()
+
+    minedOre[ore] = true
+    return true
+end
+
+local function countOres()
+    local oreFolder = workspace.Main.Ore
+    local ores = {}
+    oresToMine = 0
+    oresMined = 0
+
+    for _, ore in pairs(oreFolder:GetChildren()) do
+        if ore:IsA("Model") and ore.Name == "Ore" then
+            local promptFound = false
+            for _, obj in pairs(ore:GetDescendants()) do
+                if obj:IsA("ProximityPrompt") and obj.Enabled then
+                    promptFound = true
+                    oresToMine = oresToMine + 1
+                    break
+                end
+            end
+
+            if promptFound and not minedOre[ore] then
+                table.insert(ores, ore)
+            end
+        end
+    end
+
+    return ores
+end
+
+--ORES-----------------------------------------------------------------------------------
+
 local MainTab = MainWindow:CreateTab("Auto Farm")
 
 local Tools = MainTab:CreateSection("Tools")
@@ -915,6 +978,8 @@ local function teleportToChest(chest)
         if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             for i = 1, 5 do
                 player.Character.HumanoidRootPart.CFrame = chest.PrimaryPart.CFrame + Vector3.new(0, 3, 0)
+                minedOre = {}
+                countOres()
                 task.wait(0.2)
             end
         end
@@ -928,6 +993,8 @@ local function interactWithChest(chest)
                 child.HoldDuration = 0
                 for i = 1, 5 do
                     task.wait(0.2)
+                    minedOre = {}
+                    countOres()
                     fireproximityprompt(child)
                 end
             end
@@ -995,7 +1062,6 @@ local AutoLootChests = MainTab:CreateToggle({
                     IsLootingChest = false
                 end
             end
-            IsLootingChest = false
         end
     end,
 })
@@ -1003,67 +1069,6 @@ local AutoLootChests = MainTab:CreateToggle({
 local ItemTap = MainWindow:CreateTab("Items")
 local Mine = ItemTap:CreateSection("Auto Mine Ore")
 local Minning = false
-local minedOre = {}
-local oresToMine = 0
-local oresMined = 0
-
-local function mineOre(ore)
-    local player = game.Players.LocalPlayer
-    local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return false end
-
-    local prompt = nil
-    for _, obj in pairs(ore:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") and obj.Enabled then
-            prompt = obj
-            break
-        end
-    end
-    if not prompt then return false end
-
-    humanoidRootPart.CFrame = ore.PrimaryPart.CFrame * CFrame.new(0, 3, 0)
-
-    local camera = game.Workspace.CurrentCamera
-    local orePosition = ore.PrimaryPart.Position
-    local cameraOffset = Vector3.new(0, 5, 0)
-    camera.CFrame = CFrame.new(orePosition + cameraOffset, orePosition)
-
-    task.wait(0.3)
-    prompt.RequiresLineOfSight = false
-    prompt:InputHoldBegin()
-    task.wait(5)
-    prompt:InputHoldEnd()
-
-    minedOre[ore] = true
-    return true
-end
-
-local function countOres()
-    local oreFolder = workspace.Main.Ore
-    local ores = {}
-    oresToMine = 0
-    oresMined = 0
-
-    for _, ore in pairs(oreFolder:GetChildren()) do
-        if ore:IsA("Model") and ore.Name == "Ore" then
-            local promptFound = false
-            for _, obj in pairs(ore:GetDescendants()) do
-                if obj:IsA("ProximityPrompt") and obj.Enabled then
-                    promptFound = true
-                    oresToMine = oresToMine + 1
-                    break
-                end
-            end
-
-            if promptFound and not minedOre[ore] then
-                table.insert(ores, ore)
-            end
-        end
-    end
-
-    return ores
-end
-
 local MinningToggle = ItemTap:CreateToggle({
     Name = "Auto Mine Ore",
     CurrentValue = false,
@@ -1180,7 +1185,10 @@ local Afindwisp = ItemTap:CreateToggle({
                                     end)
 
                                     if success3 then
+                                        ininwisp.RequiresLineOfSight = false
                                         ininwisp.HoldDuration = 0
+                                        minedOre = {}
+                                        countOres()
                                         fireproximityprompt(ininwisp, 1)
                                         IsFindingWhip = false
                                     else
