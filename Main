@@ -938,12 +938,9 @@ local function interactWithChest(chest)
                 for i = 1, 5 do
 
                 task.spawn(function ()
-                    child:HoldBegin()
+                    child:InputHoldBegin()
                     task.wait(child.HoldDuration)
-                    child:HoldEnd()
-                end)
-                task.spawn(function ()
-                    fireproximityprompt(child, 1)
+                    child:InputHoldEnd()
                 end)
                     task.wait(0.25)
                 end
@@ -1186,7 +1183,9 @@ local Afindwisp = ItemTap:CreateToggle({
 
                                     if success3 then
                                         ininwisp.HoldDuration = 0
-                                        fireproximityprompt(ininwisp)
+                                        ininwisp:InputHoldBegin()
+                                        task.wait(ininwisp.HoldDuration)
+                                        ininwisp:InputHoldEnd()
                                         IsFindingWhip = false
                                     else
                                         warn("Failed to teleport to Wisp: HumanoidRootPart might be missing.")
