@@ -837,7 +837,7 @@ end
 
 local function teleportToBoss(boss)
     if boss and boss:FindFirstChild("HumanoidRootPart") then
-        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = boss.HumanoidRootPart.CFrame*CFrame.new(0,0,defaultrange)
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = boss.HumanoidRootPart.CFrame*CFrame.new(0,0,-defaultrange)
     end
 end
 
@@ -1073,8 +1073,17 @@ local function mineOre(ore)
     task.wait(0.3)
     prompt.RequiresLineOfSight = false
     prompt:InputHoldBegin()
-    task.wait(5)
+    task.wait(prompt.HoldDuration)
     prompt:InputHoldEnd()
+
+    if prompt.Enabled then
+        warn("ProximityPrompt still true")
+        
+        minedOre = {}
+        oresToMine = 0
+        oresMined = 0
+        return false
+    end
 
     minedOre[ore] = true
     return true
@@ -1123,8 +1132,10 @@ local MinningToggle = ItemTap:CreateToggle({
 
         if not Minning then
             minedOre = {}
-            countOres()
+            oresToMine = 0
+            oresMined = 0
             IsMining = false
+            return
         end
 
         while Minning do
@@ -1140,6 +1151,15 @@ local MinningToggle = ItemTap:CreateToggle({
                 end
 
                 local ores = countOres()
+
+                if oresToMine == 0 and oresMined == 0 then
+                    warn("No Ores Found Resetting...")
+                    minedOre = {}
+                    oresToMine = 0
+                    oresMined = 0
+                    wait(2)
+                    return
+                end
 
                 if oresToMine > 0 then
                     for _, ore in ipairs(ores) do
@@ -1160,6 +1180,7 @@ local MinningToggle = ItemTap:CreateToggle({
                 end
 
                 if oresMined == oresToMine then
+                    warn("Mined All Resetting Table...")
                     minedOre = {}
                     oresToMine = 0
                     oresMined = 0
