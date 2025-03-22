@@ -1255,16 +1255,20 @@ local Afindwisp = ItemTap:CreateToggle({
     Flag = "AFWisp",
     Callback = function(Value)
         findingwisp = Value
-        local me = game.Players.LocalPlayer.Character
-
-        if not me or not me:FindFirstChild("HumanoidRootPart") then
-            task.wait(2)
-            return
-        end
         
         if findingwisp then
             while findingwisp do
                 task.wait(1)
+
+                local success, me = pcall(function()
+                    return game.Players.LocalPlayer.Character
+                end)
+
+                if not success or not me then
+                    warn("Error: Player's character is missing (possibly dead).")
+                    findingwisp = false
+                    break
+                end
 
                 local whereiswisp = workspace:FindFirstChild("Main")
                 if whereiswisp then
@@ -1275,28 +1279,38 @@ local Afindwisp = ItemTap:CreateToggle({
                     for _, wisp in pairs(whereiswisp:GetChildren()) do
                         if wisp:IsA("Model") then
                             IsFindingWhip = true
-                            local success, insidewisp = pcall(function()
+                            
+                            local success2, insidewisp = pcall(function()
                                 return wisp:FindFirstChild("Torso")
                             end)
-                            
-                            if success and insidewisp then
-                                local success2, ininwisp = pcall(function()
+
+                            if success2 and insidewisp then
+                                local success3, ininwisp = pcall(function()
                                     return insidewisp:FindFirstChildOfClass("ProximityPrompt")
                                 end)
 
-                                if success2 and ininwisp then
-                                    local success3, _ = pcall(function()
-                                        me.HumanoidRootPart.CFrame = insidewisp.CFrame
+                                if success3 and ininwisp then
+                                    local success4, hrp = pcall(function()
+                                        return me:FindFirstChild("HumanoidRootPart")
                                     end)
 
-                                    if success3 then
-                                        ininwisp.HoldDuration = 0
-                                        ininwisp:InputHoldBegin()
-                                        task.wait(ininwisp.HoldDuration)
-                                        ininwisp:InputHoldEnd()
-                                        IsFindingWhip = false
+                                    if success4 and hrp then
+                                        local success5, err = pcall(function()
+                                            hrp.CFrame = insidewisp.CFrame
+                                        end)
+
+                                        if success5 then
+                                            ininwisp.HoldDuration = 0
+                                            ininwisp:InputHoldBegin()
+                                            task.wait(ininwisp.HoldDuration)
+                                            ininwisp:InputHoldEnd()
+                                            IsFindingWhip = false
+                                        else
+                                            warn("Failed to teleport to Wisp: " .. tostring(err))
+                                            IsFindingWhip = false
+                                        end
                                     else
-                                        warn("Failed to teleport to Wisp: HumanoidRootPart might be missing.")
+                                        warn("Error: HumanoidRootPart is missing.")
                                         IsFindingWhip = false
                                     end
                                 else
