@@ -650,7 +650,7 @@ local mobDropdown = MainTab:CreateDropdown({
 
 local FindClosedMob = MainTab:CreateSlider({
     Name = "Farm Mob Range",
-    Range = {1, 20},
+    Range = {1, 50},
     Increment = 1,
     Suffix = "Stud",
     CurrentValue = defaultrange,
