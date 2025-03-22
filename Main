@@ -1044,10 +1044,10 @@ local oresToMine = 0
 local oresMined = 0
 
 local function resetMiningCache()
-    warn("Reset Ores!")
     minedOre = {}
     oresToMine = 0
     oresMined = 0
+    warn("Reset Ore Cache!")
 end
 
 local function mineOre(ore)
@@ -1178,9 +1178,9 @@ local MinningToggle = ItemTap:CreateToggle({
                     return
                 end        
 
-                print("Retune Status: ", tostring(IsWorldBoss), tostring(IsFindingWhip), tostring(IsLootingChest))
+                print("Return Status: ", tostring(IsWorldBoss), tostring(IsFindingWhip), tostring(IsLootingChest))
                 if IsWorldBoss or IsFindingWhip or IsLootingChest then
-                    print("Hunting Boss or FindingWisp or LootingChest")
+                    print("Hunting Boss or Finding Wisp or Looting Chest")
                     resetMiningCache()
                     task.wait(2)
                     return
