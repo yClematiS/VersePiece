@@ -1089,6 +1089,21 @@ local function mineOre(ore)
     local cameraOffset = Vector3.new(0, 5, 0)
     camera.CFrame = CFrame.new(orePosition + cameraOffset, orePosition)
 
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    if not character then 
+        warn("Player Dead, Skipping Ore...")
+        return false 
+    end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    local humanoid = character:FindFirstChild("Humanoid")
+    
+    if not humanoidRootPart or (humanoid and humanoid.Health == 0) then 
+        warn("Player is dead, skipping mining process.")
+        return false 
+    end
+
     task.wait(0.3)
     prompt.RequiresLineOfSight = false
     prompt:InputHoldBegin()
