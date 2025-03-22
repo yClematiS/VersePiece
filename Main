@@ -196,7 +196,7 @@ local AutoEquipToggle = MainTab:CreateToggle({
             equipTask = task.spawn(function()
                 while ATools do
                     equipToolToCharacter()
-                    task.wait(0.1)
+                    task.wait(0.5)
                 end
             end)
         else
@@ -246,7 +246,7 @@ local AutoAttack = MainTab:CreateToggle({
                 game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
             end)
 
-            task.wait(0.12)
+            task.wait(0.2)
             if not autoattack then break end
         end
     end
@@ -303,7 +303,6 @@ local quickattack = MainTab:CreateToggle({
         end
     end
 })
-
 
 local Skills = MainTab:CreateSection("Skill Selection")
 secskills = {
@@ -372,7 +371,7 @@ local spamskill = MainTab:CreateToggle({
                         [5] = equippedTool.Name
                     }
                     game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
-                    task.wait(0.2)
+                    task.wait(0.5)
                 end
             end)
 
@@ -407,6 +406,7 @@ local autoabilly = MainTab:CreateToggle({
 
 local InstantKill = MainTab:CreateSection("Kill Aura")
 killmobpercent = {
+    ["95%"] = 0.95,
     ["90%"] = 0.90,
     ["75%"] = 0.75,
     ["50%"] = 0.50,
@@ -417,7 +417,7 @@ defaultkillmobpercent = 0.90
 
 local killmobpercentDropdown = MainTab:CreateDropdown({
     Name = "Kill Mob at %",
-    Options = {"90%", "75%", "50%", "25%", "10%"},
+    Options = {"95%", "90%", "75%", "50%", "25%", "10%"},
     CurrentOption = "90%",
     MultipleOptions = false,
     Flag = "Inskillpercent",
@@ -473,7 +473,6 @@ local killmobpercentDropdown = MainTab:CreateDropdown({
  
  local function updateHitboxSize()
     if ShowHitbox then
-         task.wait(0.1)
          if hitbox then
              local newSize = Vector3.new(defaultstudmob * 2, defaultstudmob * 2, defaultstudmob * 2)
              if hitbox.Size ~= newSize then
@@ -545,13 +544,18 @@ local FindClosedMob = MainTab:CreateSlider({
                 end
                  while SetHealth do
                      task.wait(0.1)
- 
                      local success, errorMessage = pcall(function()
                          local mobFolder = workspace:FindFirstChild("Main")
                          local me = game.Players.LocalPlayer.Character
-                         if not me then return end
+                         if not me then 
+                            task.wait(2)
+                            return 
+                        end
                          local hrp = me:FindFirstChild("HumanoidRootPart")
-                         if not hrp then return end
+                         if not hrp then 
+                            task.wait(2)
+                            return 
+                        end
  
                          if mobFolder then
                              local plyRoot = hrp
@@ -685,6 +689,7 @@ local GoToMob = MainTab:CreateToggle({
                         IsOnMob = true
                          if not humanoid or humanoid.Health <= 0 or not hrp then
                             IsOnMob = false
+                            task.wait(2)
                              return
                          end
 
@@ -861,6 +866,7 @@ local AutoBosses = MainTab:CreateToggle({
                 local character = player and player.Character
                 if not character or character:FindFirstChild("Humanoid") and character.Humanoid.Health <= 0 then
                     IsWorldBoss = false
+                    task.wait(2)
                     return
                 end
             end)
@@ -991,6 +997,16 @@ local AutoLootChests = MainTab:CreateToggle({
             task.cancel(lootTask)
         end
 
+        pcall(function()
+            local player = game.Players.LocalPlayer
+            local character = player and player.Character
+            if not character or character:FindFirstChild("Humanoid") and character.Humanoid.Health <= 0 then
+                IsLootingChest = false
+                task.wait(2)
+                return
+            end
+        end)
+
         lootTask = task.spawn(function()
             while AutoWLoot do
                 task.wait(0.5)
@@ -1036,8 +1052,26 @@ end
 
 local function mineOre(ore)
     local player = game.Players.LocalPlayer
-    local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return false end
+    local character = player.Character or player.CharacterAdded:Wait()
+    if not character then 
+        warn("Player Dead, Skipping Ore...")
+        return false 
+    end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    local humanoid = character:FindFirstChild("Humanoid")
+    
+    if not humanoidRootPart or (humanoid and humanoid.Health == 0) then 
+        warn("Player is dead, skipping mining process.")
+        return false 
+    end
+
+    if oresMined >= oresToMine then
+        warn("Over Data Return...")
+        resetMiningCache()
+        task.wait(1)
+        return
+    end
 
     local prompt = nil
     for _, obj in pairs(ore:GetDescendants()) do
@@ -1082,7 +1116,7 @@ end
 local function countOres()
     local oreFolder = workspace.Main.Ore
     local ores = {}
-    oresToMine = 0 
+    oresToMine = 0
     warn("Counting All Ores")
     
     for _, ore in pairs(oreFolder:GetChildren()) do
@@ -1101,7 +1135,6 @@ local function countOres()
             end
         end
     end
-
     return ores
 end
 
@@ -1131,24 +1164,45 @@ local MinningToggle = ItemTap:CreateToggle({
 
         while Minning do
             task.wait(0.2)
+        
             local success, err = pcall(function()
                 local player = game.Players.LocalPlayer
                 local character = player.Character or player.CharacterAdded:Wait()
-                if not character then
+                if not character or not character:FindFirstChild("HumanoidRootPart") then
+                    warn("Player Dead, Waiting for Respawn...")
                     resetMiningCache()
-                    wait(2)
+                    repeat 
+                        task.wait(2)
+                        character = player.Character or player.CharacterAdded:Wait()
+                    until character and character:FindFirstChild("HumanoidRootPart")
                     return
-                end
+                end        
+
                 print("Retune Status: ", tostring(IsWorldBoss), tostring(IsFindingWhip), tostring(IsLootingChest))
                 if IsWorldBoss or IsFindingWhip or IsLootingChest then
                     print("Hunting Boss or FindingWisp or LootingChest")
                     resetMiningCache()
-                    wait(2)
+                    task.wait(2)
                     return
                 end
 
                 if FixMiningLag then FixMiningLag() end
                 local ores = countOres()
+                task.wait(0.2)
+
+                if oresToMine == 0 then
+                    warn("Over Data Return...")
+                    resetMiningCache()
+                    task.wait(1)
+                    return
+                end
+
+                if oresMined >= oresToMine then
+                    warn("Over Data Return...")
+                    resetMiningCache()
+                    task.wait(1)
+                    return
+                end
 
                 if #ores == 0 then
                     warn("No Ores Found Resetting...")
@@ -1166,12 +1220,7 @@ local MinningToggle = ItemTap:CreateToggle({
                     if not mineSuccess then
                         warn("Error mining ore:", mineErr)
                     end
-                end
-
-                if oresMined >= oresToMine then
-                    warn("Mined All Resetting Table...")
-                    resetMiningCache()
-                end                
+                end     
 
                 wait(1)
             end)
@@ -1182,7 +1231,6 @@ local MinningToggle = ItemTap:CreateToggle({
         end
     end,
 })
-
 
 local Wisp = ItemTap:CreateSection("Auto Find Wisp")
 findingwisp = false
@@ -1195,6 +1243,7 @@ local Afindwisp = ItemTap:CreateToggle({
         local me = game.Players.LocalPlayer.Character
 
         if not me or not me:FindFirstChild("HumanoidRootPart") then
+            task.wait(2)
             return
         end
         
@@ -1305,6 +1354,10 @@ local GotoPlayerToggle = location:CreateToggle({
                         local targetPlayer = game.Players:FindFirstChild(defaultotherplayer)
                         if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
                             local me = game.Players.LocalPlayer.Character
+                            if not me then
+                                task.wait(1)
+                                return
+                            end
                             if me and me:FindFirstChild("HumanoidRootPart") then
                                 me:PivotTo(targetPlayer.Character.HumanoidRootPart.CFrame*CFrame.new(0,1,2))
                             end
@@ -1552,55 +1605,11 @@ local ClearMob = MiscTab:CreateButton({
     end,
  })
 
- local Debugging = MainWindow:CreateTab("Debugging")
- local MyPath = Debugging:CreateButton({
-     Name = "print",
-     Callback = function()
-         -- ใช้ task.spawn() เพื่อป้องกันการบล็อกจาก error
-         task.spawn(function()
-             -- 🔹 วิธีที่ 1: ใช้ Name และ Debugging
-             print("Button Path: ", Debugging.Name .. " -> " .. MyPath.Name)
-         end)
- 
-         task.spawn(function()
-             -- 🔹 วิธีที่ 2: ตรวจสอบ Parent
-             if MyPath.Parent then
-                 print("Parent Path: ", MyPath.Parent.Name .. " -> " .. MyPath.Name)
-             else
-                 print("Parent not found!")
-             end
-         end)
- 
-         task.spawn(function()
-             -- 🔹 วิธีที่ 3: ใช้ GetFullPath() ถ้ามี
-             if MyPath.GetFullPath then
-                 print("Full Path: ", MyPath:GetFullPath())
-             else
-                 print("GetFullPath() not supported!")
-             end
-         end)
- 
-         task.spawn(function()
-             -- 🔹 วิธีที่ 4: ค้นหาใน Debugging
-             for _, child in pairs(Debugging:GetChildren()) do
-                 if child == MyPath then
-                     print("Found in Tab: ", Debugging.Name .. " -> " .. child.Name)
-                 end
-             end
-         end)
- 
-         task.spawn(function()
-             -- 🔹 วิธีที่ 5: ตรวจสอบประเภทของอ็อบเจ็กต์
-             print("Object Type: ", typeof(MyPath))
-             print("Raw Object: ", tostring(MyPath))
-         end)
-     end,
- })
-
 Rayfield:LoadConfiguration()
 
 _G.searcherayfield = true
 local foundray = false
+task.spawn(function ()
 while _G.searcherayfield and not foundray do
     task.wait(1)
     local coreGui = game:GetService("CoreGui")
@@ -1696,3 +1705,4 @@ while _G.searcherayfield and not foundray do
         end
     end
 end
+end)
