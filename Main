@@ -943,7 +943,7 @@ local function interactWithChest(chest)
         for _, child in pairs(chest:GetChildren()) do
             if child:IsA("ProximityPrompt") then
                 child.HoldDuration = 0
-                child.MaxActivationDistance = 1000
+                child.MaxActivationDistance = 1000000
                 child.RequiresLineOfSight = false
                 task.wait(0.1)
                 for i = 1, 5 do
@@ -1052,22 +1052,20 @@ end
 
 local function mineOre(ore)
     local player = game.Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
-    if not character then 
-        warn("Player Dead, Skipping Ore...")
-        return false 
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        warn("Player is dead, skipping ore...")
+        return false
     end
-    
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+
     local humanoid = character:FindFirstChild("Humanoid")
-    
-    if not humanoidRootPart or (humanoid and humanoid.Health == 0) then 
-        warn("Player is dead, skipping mining process.")
-        return false 
+    if humanoid and humanoid.Health <= 0 then
+        warn("Player is dead, waiting to respawn...")
+        return false
     end
 
     if oresMined >= oresToMine then
-        warn("Over Data Return...")
+        warn("Mining limit reached, resetting ore cache...")
         resetMiningCache()
         task.wait(1)
         return
@@ -1082,31 +1080,25 @@ local function mineOre(ore)
     end
     if not prompt then return false end
 
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
     humanoidRootPart.CFrame = ore.PrimaryPart.CFrame * CFrame.new(0, 3, 0)
 
     local camera = game.Workspace.CurrentCamera
     local orePosition = ore.PrimaryPart.Position
-    local cameraOffset = Vector3.new(0, 5, 0)
-    camera.CFrame = CFrame.new(orePosition + cameraOffset, orePosition)
+    camera.CFrame = CFrame.new(orePosition + Vector3.new(0, 5, 0), orePosition)
 
-    local player = game.Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
-    if not character then 
-        warn("Player Dead, Skipping Ore...")
-        return false 
-    end
-    
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    local humanoid = character:FindFirstChild("Humanoid")
-    
-    if not humanoidRootPart or (humanoid and humanoid.Health == 0) then 
-        warn("Player is dead, skipping mining process.")
-        return false 
+    character = player.Character
+    humanoid = character and character:FindFirstChild("Humanoid")
+    if not character or not humanoid or humanoid.Health <= 0 then
+        warn("Player died again, skipping mining...")
+        return false
     end
 
     task.wait(0.3)
+    prompt.MaxActivationDistance = 100
     prompt.RequiresLineOfSight = false
     prompt:InputHoldBegin()
+    
     if IsWorldBoss or IsFindingWhip or IsLootingChest then
         prompt:InputHoldEnd()
         return false
@@ -1114,16 +1106,15 @@ local function mineOre(ore)
     task.wait(prompt.HoldDuration)
 
     prompt:InputHoldEnd()
-
     if prompt.Enabled then
-        warn("ProximityPrompt still true, resetting ores")
+        warn("ProximityPrompt still enabled, resetting ores...")
         resetMiningCache()
         return false
     end
 
     minedOre[ore] = true
     oresMined = oresMined + 1 
-    warn("Mined Ore:", oresMined, "oresToMine:", oresToMine)
+    warn("Mined Ore:", oresMined, "Total Ores:", oresToMine)
 
     return true
 end
@@ -1165,6 +1156,23 @@ function FixMiningLag()
     end)
 end
 
+local function waitForCharacter()
+    local player = game.Players.LocalPlayer
+    while not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") do
+        warn("Waiting for character respawn...")
+        task.wait(1)
+    end
+    return player.Character
+end
+
+local function waitForOreFolder()
+    while not workspace:FindFirstChild("Main") or not workspace.Main:FindFirstChild("Ore") do
+        warn("Waiting for Ore Folder...")
+        task.wait(1)
+    end
+    return workspace.Main.Ore
+end
+
 local MinningToggle = ItemTap:CreateToggle({
     Name = "Auto Mine Ore",
     CurrentValue = false,
@@ -1182,16 +1190,7 @@ local MinningToggle = ItemTap:CreateToggle({
         
             local success, err = pcall(function()
                 local player = game.Players.LocalPlayer
-                local character = player.Character or player.CharacterAdded:Wait()
-                if not character or not character:FindFirstChild("HumanoidRootPart") then
-                    warn("Player Dead, Waiting for Respawn...")
-                    resetMiningCache()
-                    repeat 
-                        task.wait(2)
-                        character = player.Character or player.CharacterAdded:Wait()
-                    until character and character:FindFirstChild("HumanoidRootPart")
-                    return
-                end        
+                local character = waitForCharacter()
 
                 print("Return Status: ", tostring(IsWorldBoss), tostring(IsFindingWhip), tostring(IsLootingChest))
                 if IsWorldBoss or IsFindingWhip or IsLootingChest then
@@ -1202,6 +1201,7 @@ local MinningToggle = ItemTap:CreateToggle({
                 end
 
                 if FixMiningLag then FixMiningLag() end
+                local oreFolder = waitForOreFolder()
                 local ores = countOres()
                 task.wait(0.2)
 
@@ -1222,7 +1222,7 @@ local MinningToggle = ItemTap:CreateToggle({
                 if #ores == 0 then
                     warn("No Ores Found Resetting...")
                     resetMiningCache()
-                    wait(2)
+                    task.wait(2)
                     return
                 end
 
@@ -1237,7 +1237,7 @@ local MinningToggle = ItemTap:CreateToggle({
                     end
                 end     
 
-                wait(1)
+                task.wait(1)
             end)
 
             if not success then
