@@ -1266,8 +1266,7 @@ local Afindwisp = ItemTap:CreateToggle({
 
                 if not success or not me then
                     warn("Error: Player's character is missing (possibly dead).")
-                    findingwisp = false
-                    break
+                    return
                 end
 
                 local whereiswisp = workspace:FindFirstChild("Main")
