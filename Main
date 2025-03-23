@@ -1255,7 +1255,7 @@ local Afindwisp = ItemTap:CreateToggle({
     Flag = "AFWisp",
     Callback = function(Value)
         findingwisp = Value
-        
+
         if findingwisp then
             while findingwisp do
                 task.wait(1)
@@ -1266,69 +1266,36 @@ local Afindwisp = ItemTap:CreateToggle({
 
                 if not success or not me then
                     warn("Error: Player's character is missing (possibly dead).")
-                    return
+                    break
                 end
 
-                local whereiswisp = workspace:FindFirstChild("Main")
-                if whereiswisp then
-                    whereiswisp = whereiswisp:FindFirstChild("Wisp")
-                end
+                local wispContainer = workspace:FindFirstChild("Main")
+                local wisps = wispContainer and wispContainer:FindFirstChild("Wisp")
 
-                if whereiswisp then
-                    for _, wisp in pairs(whereiswisp:GetChildren()) do
+                if wisps and #wisps:GetChildren() > 0 then
+                    for _, wisp in pairs(wisps:GetChildren()) do
                         if wisp:IsA("Model") then
-                            IsFindingWhip = true
-                            
-                            local success2, insidewisp = pcall(function()
-                                return wisp:FindFirstChild("Torso")
-                            end)
+                            local torso = wisp:FindFirstChild("Torso")
+                            local prompt = torso and torso:FindFirstChildOfClass("ProximityPrompt")
+                            local hrp = me:FindFirstChild("HumanoidRootPart")
 
-                            if success2 and insidewisp then
-                                local success3, ininwisp = pcall(function()
-                                    return insidewisp:FindFirstChildOfClass("ProximityPrompt")
-                                end)
-
-                                if success3 and ininwisp then
-                                    local success4, hrp = pcall(function()
-                                        return me:FindFirstChild("HumanoidRootPart")
-                                    end)
-
-                                    if success4 and hrp then
-                                        local success5, err = pcall(function()
-                                            hrp.CFrame = insidewisp.CFrame
-                                        end)
-
-                                        if success5 then
-                                            ininwisp.HoldDuration = 0
-                                            ininwisp:InputHoldBegin()
-                                            task.wait(ininwisp.HoldDuration)
-                                            ininwisp:InputHoldEnd()
-                                            IsFindingWhip = false
-                                        else
-                                            warn("Failed to teleport to Wisp: " .. tostring(err))
-                                            IsFindingWhip = false
-                                        end
-                                    else
-                                        warn("Error: HumanoidRootPart is missing.")
-                                        IsFindingWhip = false
-                                    end
-                                else
-                                    warn("Failed to find ProximityPrompt.")
-                                    IsFindingWhip = false
-                                end
-                            else
-                                warn("Failed to find Wisp Torso.")
-                                IsFindingWhip = false
+                            if torso and prompt and hrp then
+                                hrp.CFrame = torso.CFrame
+                                prompt.HoldDuration = 0
+                                prompt:InputHoldBegin()
+                                task.wait(prompt.HoldDuration)
+                                prompt:InputHoldEnd()
                             end
                         end
                     end
+                else
+                    warn("No Wisps found. Retrying...")
                 end
             end
-        else
-            IsFindingWhip = false
         end
     end,
 })
+
 
 local location = MainWindow:CreateTab("Teleport")
 local gotoplayer = location:CreateSection("Players")
