@@ -1,0 +1,428 @@
+local repo = 'https://raw.githubusercontent.com/yClematiS/uilibary/'
+local Library = loadstring(game:HttpGet(repo .. 'main/Libary'))()
+local ThemeManager = loadstring(game:HttpGet(repo .. 'main/Theme-Manager'))()
+local SaveManager = loadstring(game:HttpGet(repo .. 'main/Save-Manager'))()
+local myusername = game.Players.LocalPlayer.Character.Name
+local Window = Library:CreateWindow({
+    Title = 'Clematis Hub | '.. myusername .. ' | Status : FREE_USER',
+    Center = true,
+    AutoShow = true,
+    TabPadding = 8,
+    MenuFadeTime = 0.2
+})
+
+---------------Flags
+IsAutoEquip = false
+IsAutoHit = false
+IsFastAttack = false
+IsMining = false
+IsAutoHit = false
+IsSpamskill = false
+IsAutoAbility = false
+-----------------------------
+local RunService = game:GetService('RunService')
+local Tabs = {
+    Home = Window:AddTab('Home'),
+    Main = Window:AddTab('Main'),
+    ['UI Settings'] = Window:AddTab('Settings'),
+}
+
+local FlagStat = Tabs.Home:AddLeftGroupbox('Function Status: ')
+local AutoEquip = FlagStat:AddLabel("Auto Equip : " .. tostring(IsAutoEquip))
+local FlagAutoHit = FlagStat:AddLabel("Auto Hit : " .. tostring(IsAutoHit))
+local FastAttackLabel = FlagStat:AddLabel("Fast Attack : " .. tostring(IsFastAttack))
+local MiningOre = FlagStat:AddLabel("Mining Ore : " .. tostring(IsMining))
+local SpamSkill = FlagStat:AddLabel("Auto Skill : " .. tostring(IsSpamskill))
+local AutoAbiliy = FlagStat:AddLabel("Auto Ability : " .. tostring(IsAutoAbility))
+
+RunService.RenderStepped:Connect(function()
+    AutoEquip:SetText("Auto Equip : " .. tostring(IsAutoEquip))
+    FlagAutoHit:SetText("Auto Hit : " .. tostring(IsAutoHit))
+    FastAttackLabel:SetText("FastAttack : " .. tostring(IsFastAttack))
+    MiningOre:SetText("Mining Ore : " .. tostring(IsMining))
+    SpamSkill:SetText("Auto Skill : " .. tostring(IsSpamskill))
+    AutoAbiliy:SetText("Auto Ability : " .. tostring(IsAutoAbility))
+end)
+
+local Credit = Tabs.Home:AddRightGroupbox('Owner')
+local Credits = Credit:AddLabel('\nScript by Discord: Seaweed_hunter\n\n' ..
+    'ui by: Linoria Library', true
+)
+
+local CopyDiscord = Credit:AddButton({
+    Text = 'Copy Discord Server',
+    Func = function()
+        setclipboard("https://discord.gg/5sRWVMtGgY")
+    end,
+    DoubleClick = false,
+    Tooltip = 'Press to copy my discord invite link!'
+})
+
+---------------------------------------------------------------------------------------------------
+local Weapon = Tabs.Main:AddLeftGroupbox('Tools')
+local tool = {}
+local player = game.Players.LocalPlayer
+ATools = false
+defaulttool = ""
+local function refreshTools()
+    tool = {}
+    local character = player.Character
+    if character then
+        for _, obj in pairs(character:GetChildren()) do
+            if obj:IsA("Tool") then
+                table.insert(tool, obj.Name)
+            end
+        end
+    end
+    
+    for _, obj in pairs(player.Backpack:GetChildren()) do
+        if obj:IsA("Tool") then
+            table.insert(tool, obj.Name)
+        end
+    end
+    if invweapons then
+        invweapons:SetValues(tool)
+    end
+end
+local function equipToolToCharacter()
+    local character = player.Character
+    if character and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0 then
+        local tool = player.Backpack:FindFirstChild(defaulttool)
+        if tool then
+            local success, errorMessage = pcall(function()
+                tool.Parent = character
+            end)
+            if not success then
+                warn("Error equipping tool: ", errorMessage)
+            end
+        end
+    end
+end
+invweapons = Weapon:AddDropdown('Select Tool', {
+    Values = tool,
+    Default = 1,
+    Multi = false,
+    Text = "Select Weapon",
+    Tooltip = "Select Weapon to auto equip",
+    Callback = function(Value)
+        local selected = type(Value) == "table" and Value[1] or Value
+        if selected and table.find(tool, selected) then
+            defaulttool = selected
+        end
+    end
+})
+local RefreshDropdown = Weapon:AddButton({
+    Text = 'Refresh Dropdown',
+    Func = function()
+        refreshTools()
+    end,
+    DoubleClick = false,
+    Tooltip = 'Click to refresh the tool list'
+})
+local equipTask = nil
+ATools = false
+local AutoEquipToggle = Weapon:AddToggle('Auto Equip Selected Weapon', {
+    Text = 'Auto Equip Selected Weapon',
+    Default = ATools,
+    Tooltip = 'Automatically equips the selected weapon when toggled on', 
+    Callback = function(Value)
+        ATools = Value 
+        IsAutoEquip = Value
+        if ATools then
+            if equipTask then
+                task.cancel(equipTask)
+            end
+            equipTask = task.spawn(function()
+                while ATools do
+                    equipToolToCharacter()
+                    task.wait(0.5)
+                end
+            end)
+        else
+            if equipTask then
+                task.cancel(equipTask)
+                equipTask = nil
+            end
+        end
+    end,
+})
+refreshTools()
+
+local autoattack = false
+local AutoAttack = Weapon:AddToggle("Auto Hit [No Animation]", {
+    Text = "Auto Hit [No Animation]",
+    Default = autoattack,
+    Tooltip = 'Automatically attack without animation wrok with some weapon', 
+    Callback = function(Value)
+        autoattack = Value
+        IsAutoHit = Value
+        while autoattack do
+            local success, err = pcall(function()
+                local player = game.Players.LocalPlayer
+                local equippedTool = player.Character and player.Character:FindFirstChildOfClass("Tool")
+
+                if not equippedTool then
+                    error("No tool equipped.")
+                end
+
+                local toolstype = equippedTool:FindFirstChildOfClass("BoolValue")
+                if not toolstype then
+                    error("No item type found in the tool.")
+                end
+
+                local args = {
+                    [1] = "Server",
+                    [2] = toolstype.Name,
+                    [3] = "M1s", 
+                    [4] = nil,
+                    [5] = equippedTool.Name
+                }
+                game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
+            end)
+
+            task.wait(0.2)
+            if not autoattack then break end
+        end
+    end,
+})
+
+local quickautoattack = false
+local count = 1
+local attackTask = nil
+
+quickattack = Weapon:AddToggle('Auto Fast Hit [Animation]', {
+    Text = "Auto Fast Hit [Animation]",
+    Default = quickautoattack,
+    Tooltip = 'Ultra Fast Attack',
+    Callback = function(Value)
+        quickautoattack = Value
+        IsFastAttack = true
+        if not quickautoattack then
+            IsFastAttack = false
+        end
+        if quickautoattack then
+            if attackTask then
+                task.cancel(attackTask)
+                attackTask = nil
+            end
+            attackTask = task.spawn(function()
+                while quickautoattack do
+                    local player = game.Players.LocalPlayer
+                    local equippedTool = player.Character and player.Character:FindFirstChildOfClass("Tool")
+
+                    if equippedTool then
+                        local toolstype = equippedTool:FindFirstChildOfClass("BoolValue")
+                        if toolstype then
+                            local args = {
+                                [1] = "Server",
+                                [2] = toolstype.Name,
+                                [3] = "M1s", 
+                                [4] = count,
+                                [5] = equippedTool.Name
+                            }
+
+                            game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
+
+                            count = count + 1
+                            if count > 5 then
+                                count = 1
+                            end
+                        end
+                    end
+
+                    task.wait(0.01)
+                end
+            end)
+        else
+            if attackTask then
+                task.cancel(attackTask)
+                attackTask = nil
+            end
+        end
+    end,
+})
+
+---------------------------------------------------------------------------------------------------
+local AutoSKill = Tabs.Main:AddLeftGroupbox('Auto Skill')
+defaultsecskills = {}
+
+skillsec = AutoSKill:AddDropdown('Select Tool', {
+    Values = {"Move1", "Move2", "Move3", "Move4", "Move5"},
+    Default = {},
+    Multi = true,
+    Text = "Select Skills",
+    Tooltip = "Spam Skills",
+    Callback = function(Value)
+        print("Select Skills:", Value)  
+        defaultsecskills = {}  
+
+        for skill, selected in pairs(Value) do
+            if selected then
+                table.insert(defaultsecskills, skill)
+            end
+        end
+        local selectedSkills = table.concat(defaultsecskills, ", ")
+        print("Selected Skills in table:", selectedSkills)
+    end
+})
+
+spamskill = AutoSKill:AddToggle("Auto Skills", {
+    Text = "Auto Skills",
+    Default = IsSpamskill,
+    Tooltip = 'Spam Selected Skills',
+    Callback = function(Value)
+        IsSpamskill = Value
+
+        while IsSpamskill do
+            pcall(function()
+                if #defaultsecskills == 0 then
+                    error("No skill selected.")
+                end
+
+                local player = game.Players.LocalPlayer
+                local equippedTool = player.Character and player.Character:FindFirstChildOfClass("Tool")
+
+                if not equippedTool then
+                    error("No tool equipped.")
+                end
+
+                local toolstype = equippedTool:FindFirstChildOfClass("BoolValue")
+                if not toolstype then
+                    error("No item type found in the tool.")
+                end
+
+                local combattype = ""
+                if toolstype.Name == "Fruit" or toolstype.Name == "Sword" then
+                    combattype = toolstype.Name
+                elseif toolstype.Name == "Combat" then
+                    combattype = "Special"
+                else
+                    error("Unknown tool type.")
+                end
+
+                for _, skill in ipairs(defaultsecskills) do
+                    local args = {
+                        [1] = "Server", 
+                        [2] = combattype,
+                        [3] = skill,
+                        [4] = true,
+                        [5] = equippedTool.Name
+                    }
+                    local success, result = pcall(function()
+                        game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
+                    end)
+
+                    if not success then
+                        print("Error firing server:", result)
+                    end
+                    task.wait(0.5)
+                end
+            end)
+
+            task.wait(0.5)
+            if not IsSpamskill then break end
+        end
+    end,
+})
+
+Aaability = AutoSKill:AddToggle("Auto Ability", {
+    Text = "Auto Ability",
+    Default = IsAutoAbility,
+    Tooltip = 'Spam Ability Skill',
+    Callback = function(Value)
+        IsAutoAbility = Value
+        while IsAutoAbility do
+            pcall(function()
+                local args = {
+                    [1] = "Server",
+                    [2] = "Misc",
+                    [3] = "Ability"
+                }
+                
+                game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
+            end)
+            task.wait(0.5)
+            if not IsAutoAbility then break end
+        end
+    end,
+})
+------------------Water Mark-------------------------------
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local username = LocalPlayer and LocalPlayer.Name or "Guest"
+Library:SetWatermarkVisibility(true)
+
+local FrameTimer = tick()
+local FrameCounter = 0
+local FPS = 60
+local isGlitching = false
+local glitchTimer = 0
+local chars = {}
+for i = 65, 90 do table.insert(chars, string.char(i)) end
+for i = 97, 122 do table.insert(chars, string.char(i)) end
+for i = 48, 57 do table.insert(chars, string.char(i)) end
+for i = 3585, 3675 do table.insert(chars, utf8.char(i)) end
+for _, symbol in ipairs({'@', '#', '$', '%', '&', '*', '+', '-', '?', '!', '~'}) do
+    table.insert(chars, symbol)
+end
+
+local function getGlitchedText(text)
+    local textArray = text:split("")
+    
+    for i = 1, #textArray do
+        textArray[i] = chars[math.random(1, #chars)]
+    end
+    
+    return table.concat(textArray)
+end
+
+local WatermarkConnection = game:GetService('RunService').RenderStepped:Connect(function()
+    FrameCounter = FrameCounter + 1
+
+    if (tick() - FrameTimer) >= 1 then
+        FPS = FrameCounter
+        FrameTimer = tick()
+        FrameCounter = 0
+    end
+
+    if isGlitching then
+        if tick() > glitchTimer then
+            isGlitching = false
+        end
+    else
+        if math.random() < 0.001 then
+            isGlitching = true
+            glitchTimer = tick() + 0.3
+        end
+    end
+
+    local baseText = "Clematis Hub | "
+    local displayText = isGlitching and getGlitchedText(baseText) or baseText
+    local displayUsername = isGlitching and getGlitchedText(username) or username
+    local finalText = displayText .. displayUsername
+
+    Library:SetWatermark(('%s | %s fps | %s ms'):format(
+        finalText,
+        math.floor(FPS),
+        math.floor(game:GetService('Stats').Network.ServerStatsItem['Data Ping']:GetValue())
+    ))
+end)
+Library.KeybindFrame.Visible = true;
+Library:OnUnload(function()
+    WatermarkConnection:Disconnect()
+    Library.Unloaded = true
+end)
+
+local MenuGroup = Tabs['UI Settings']:AddLeftGroupbox('Menu')
+MenuGroup:AddButton('Unload', function() Library:Unload() end)
+MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'F1', NoUI = true, Text = 'Menu keybind' })
+Library.ToggleKeybind = Options.MenuKeybind
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({ 'MenuKeybind' })
+ThemeManager:SetFolder('MyScriptHub')
+SaveManager:SetFolder('MyScriptHub/specific-game')
+SaveManager:BuildConfigSection(Tabs['UI Settings'])
+ThemeManager:ApplyToTab(Tabs['UI Settings'])
+SaveManager:LoadAutoloadConfig()
