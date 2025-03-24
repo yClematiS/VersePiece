@@ -220,7 +220,7 @@ end)
 local Attack = MainTab:CreateSection("M1")
 local mfastattack = false
 local userInputService = game:GetService("UserInputService")
-
+local inputConnection
 local function onMouseClick()
     if mfastattack then
         local player = game.Players.LocalPlayer
@@ -230,7 +230,7 @@ local function onMouseClick()
             local toolstype = equippedTool:FindFirstChildOfClass("BoolValue")
             if toolstype then
                 local mcount = math.random(1, 5)
-                
+
                 local args = {
                     [1] = "Server",
                     [2] = toolstype.Name,
@@ -245,15 +245,20 @@ local function onMouseClick()
     end
 end
 
-
 local fastattack = MainTab:CreateToggle({
     Name = "Fast Attack [Manual]",
     CurrentValue = false,
     Flag = "fastattack",
     Callback = function(Value)
         mfastattack = Value
+
+        if inputConnection then
+            inputConnection:Disconnect()
+            inputConnection = nil
+        end
+
         if mfastattack then
-            userInputService.InputBegan:Connect(function(input, gameProcessed)
+            inputConnection = userInputService.InputBegan:Connect(function(input, gameProcessed)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
                     onMouseClick()
                 end
@@ -261,6 +266,7 @@ local fastattack = MainTab:CreateToggle({
         end
     end
 })
+
 
 local autoattack = false
 local AutoAttack = MainTab:CreateToggle({
@@ -1072,6 +1078,160 @@ local AutoLootChests = MainTab:CreateToggle({
 
                             pcall(function()
                                 lootMaterials()
+                            end)
+                        end)
+
+                        task.wait(3)
+                        IsLootingChest = false
+                    end
+                end
+            end
+        end)
+    end,
+})
+
+AutoWLootv2 = false
+local lootTaskv2 = nil
+
+local function tptochest(chest)
+    if chest and chest:IsA("Part") and chest:FindFirstChild("PrimaryPart") then
+        for i = 1, 5 do
+            task.wait(0.25)
+            local player = game.Players.LocalPlayer
+            if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                player.Character.HumanoidRootPart.CFrame = chest.PrimaryPart.CFrame + Vector3.new(0, 10, 4)
+            end
+        end
+    end
+end
+
+local function interactChest(chest)
+    if chest then
+        for _, child in pairs(chest:GetChildren()) do
+            if child:IsA("ProximityPrompt") then
+                child.HoldDuration = 0
+                child.MaxActivationDistance = 1000000
+                child.RequiresLineOfSight = false
+                task.wait(0.1)
+                for i = 1, 5 do
+                    task.spawn(function ()
+                        pcall(function()
+                            child:InputHoldBegin()
+                            task.wait(child.HoldDuration)
+                            child:InputHoldEnd()
+                        end)
+                    end)
+                    task.wait(0.25)
+                end
+            end
+        end
+    end
+end
+
+local function autoloot()
+    local playerGui = game.Players.LocalPlayer:FindFirstChild("PlayerGui")
+    if not playerGui then return end
+
+    local lootGui = playerGui:FindFirstChild("Loot")
+    if not lootGui then 
+        local player = game.Players.LocalPlayer
+        local character = player and player.Character
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            for _, chest in pairs(workspace.Main:GetChildren()) do
+                if chest.Name == "Raid Chest" then
+                    tptochest(chest)
+                    return
+                end
+            end
+        end
+        return
+    end
+
+    local mainFrame = lootGui:FindFirstChild("Main")
+    if not mainFrame then 
+        warn("Main Frame ไม่พบ!")
+        return
+    end
+
+    local invFrame = mainFrame:FindFirstChild("Iinv")
+    if not invFrame then 
+        warn("Iinv Frame ไม่พบ!")
+        return
+    end
+
+    local materialFrame = invFrame:FindFirstChild("Material")
+    if not materialFrame then 
+        warn("Material Frame ไม่พบ!")
+        return
+    end
+
+    local cancelButton = invFrame:FindFirstChild("Cancel")
+    if cancelButton then
+        cancelButton.Parent = materialFrame
+    end
+
+    local VirtualInputManager = game:GetService("VirtualInputManager")
+    local function pressKey(key)
+        VirtualInputManager:SendKeyEvent(true, key, false, game)
+        task.wait(0.1)
+        VirtualInputManager:SendKeyEvent(false, key, false, game)
+    end
+
+    pressKey(Enum.KeyCode.BackSlash)
+    task.wait(0.5)
+    pressKey(Enum.KeyCode.Down)
+    task.wait(0.5) 
+    for i = 1, 30 do
+        pressKey(Enum.KeyCode.Return)
+        task.wait(0.5)
+    end
+end
+
+local autolootv2 = MainTab:CreateToggle({
+    Name = "Auto Full Loot Chest [Full Auto Beta]",
+    CurrentValue = false,
+    Flag = "ALootChestFauto",
+    Callback = function(Value)
+        AutoWLootv2 = Value
+        local hidehud = game:GetService("Players").LocalPlayer.PlayerGui.HUD
+        if not AutoWLootv2 then
+            IsLootingChest = false
+            hidehud.Enabled = true
+        else
+            hidehud.Enabled = false
+        end
+        if lootTaskv2 then
+            task.cancel(lootTaskv2)
+        end
+
+        pcall(function()
+            local player = game.Players.LocalPlayer
+            local character = player and player.Character
+            if not character or character:FindFirstChild("Humanoid") and character.Humanoid.Health <= 0 then
+                IsLootingChest = false
+                task.wait(2)
+                return
+            end
+        end)
+
+        lootTaskv2 = task.spawn(function()
+            while AutoWLootv2 do
+                task.wait(0.5)
+                for _, chest in pairs(workspace.Main:GetChildren()) do
+                    if chest.Name == "Raid Chest" and not IsLootingChest then
+                        IsLootingChest = true
+                        task.spawn(function()
+                            pcall(function()
+                                tptochest(chest)
+                            end)
+                            pcall(function()
+                                interactChest(chest)
+                            end)
+
+                            task.wait(2)
+
+                            pcall(function()
+                                autoloot()
                             end)
                         end)
 
