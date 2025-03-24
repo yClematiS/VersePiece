@@ -215,9 +215,56 @@ player.CharacterAdded:Connect(function()
     end
 end)
 
+
+
+local Attack = MainTab:CreateSection("M1")
+local mfastattack = false
+local userInputService = game:GetService("UserInputService")
+
+local function onMouseClick()
+    if mfastattack then
+        local player = game.Players.LocalPlayer
+        local equippedTool = player.Character and player.Character:FindFirstChildOfClass("Tool")
+
+        if equippedTool then
+            local toolstype = equippedTool:FindFirstChildOfClass("BoolValue")
+            if toolstype then
+                local mcount = math.random(1, 5)
+                
+                local args = {
+                    [1] = "Server",
+                    [2] = toolstype.Name,
+                    [3] = "M1s",
+                    [4] = mcount,
+                    [5] = equippedTool.Name
+                }
+
+                game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
+            end
+        end
+    end
+end
+
+
+local fastattack = MainTab:CreateToggle({
+    Name = "Fast Attack [Manual]",
+    CurrentValue = false,
+    Flag = "fastattack",
+    Callback = function(Value)
+        mfastattack = Value
+        if mfastattack then
+            userInputService.InputBegan:Connect(function(input, gameProcessed)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    onMouseClick()
+                end
+            end)
+        end
+    end
+})
+
 local autoattack = false
 local AutoAttack = MainTab:CreateToggle({
-    Name = "Auto Hit [No Animation]",
+    Name = "Auto Hit [Slow No Animation]",
     CurrentValue = false,
     Flag = "AHit",
     Callback = function(Value)
