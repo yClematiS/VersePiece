@@ -111,7 +111,26 @@ IsWorldBoss = false
 IsFindingWhip = false
 IsLootingChest = false
 
---FLAG-----------------------------------------------------------------------------------
+--OPTIMIZE-----------------------------------------------------------------------------------
+
+task.spawn(function()
+local player = game:GetService("Players").LocalPlayer
+local playerGui = player:FindFirstChild("PlayerGui")
+
+if playerGui then
+    local targets = {"HUD", "Mobile"}
+    for _, targetName in ipairs(targets) do
+        local targetGui = playerGui:FindFirstChild(targetName)
+        if targetGui then
+            for _, guiObject in pairs(targetGui:GetDescendants()) do
+                if guiObject:IsA("GuiObject") then
+                    guiObject.Selectable = false
+                end
+            end
+        end
+    end
+end
+end)
 
 local MainTab = MainWindow:CreateTab("Auto Farm")
 
@@ -1096,7 +1115,7 @@ local lootTaskv2 = nil
 local function tptochest(chest)
     if chest and chest:IsA("Part") and chest:FindFirstChild("PrimaryPart") then
         for i = 1, 5 do
-            task.wait(0.25)
+            task.wait(0.3)
             local player = game.Players.LocalPlayer
             if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                 player.Character.HumanoidRootPart.CFrame = chest.PrimaryPart.CFrame + Vector3.new(0, 10, 4)
@@ -1160,9 +1179,12 @@ local function autoloot()
     end
 
     local materialFrame = invFrame:FindFirstChild("Material")
-    if not materialFrame then 
+    if not materialFrame then
         warn("Material Frame ไม่พบ!")
         return
+    else
+        task.wait(0.5)
+        game:GetService("Players").LocalPlayer.PlayerGui.Loot.Main.Iinv.Material.Selectable = false
     end
 
     local cancelButton = invFrame:FindFirstChild("Cancel")
@@ -1179,11 +1201,9 @@ local function autoloot()
 
     pressKey(Enum.KeyCode.BackSlash)
     task.wait(0.5)
-    pressKey(Enum.KeyCode.Down)
-    task.wait(0.5) 
-    for i = 1, 30 do
+    for i = 1, 60 do
         pressKey(Enum.KeyCode.Return)
-        task.wait(0.5)
+        task.wait(0.8)
     end
 end
 
@@ -1193,18 +1213,9 @@ local autolootv2 = MainTab:CreateToggle({
     Flag = "ALootChestFauto",
     Callback = function(Value)
         AutoWLootv2 = Value
-        local hidehud = game:GetService("Players").LocalPlayer.PlayerGui.HUD
-        local hidemobilebutton = game:GetService("Players").LocalPlayer.PlayerGui.Mobile
-        local disablemobilebutton = hidemobilebutton.Check
 
         if not AutoWLootv2 then
-            IsLootingChest = false
-            hidehud.Enabled = true
-            disablemobilebutton.Enabled = true
-            else
-            hidehud.Enabled = false
-            disablemobilebutton.Enabled = false
-            hidemobilebutton.Enabled = false
+            IsLootingChest = false   
         end
 
         if lootTaskv2 then
