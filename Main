@@ -1595,7 +1595,84 @@ for _, obj in pairs(workspace.Map:GetChildren()) do
                 Callback = function()
                     local me = game.Players.LocalPlayer.Character
                     if me and me:FindFirstChild("HumanoidRootPart") then
-                        me:PivotTo(primary.CFrame*CFrame.new(0,70,0))
+                        me:PivotTo(primary.CFrame*CFrame.new(0,0,0))
+                    end
+                end
+            })
+        end
+    end
+end
+
+local npcstab = MainWindow:CreateTab("NPC")
+local quest = npcstab:CreateSection("Quest")
+for _, obj in pairs(workspace.Npc.Quest:GetChildren()) do
+    if obj:IsA("Model") then
+        local primary = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+        
+        if primary then
+            npcstab:CreateButton({
+                Name = obj.Name,
+                Callback = function()
+                    local me = game.Players.LocalPlayer.Character
+                    if me and me:FindFirstChild("HumanoidRootPart") then
+                        me:PivotTo(primary.CFrame*CFrame.new(0,0,-3))
+                    end
+                end
+            })
+        end
+    end
+end
+
+local npcs = npcstab:CreateSection("Combat")
+for _, obj in pairs(workspace.Npc.Combat:GetChildren()) do
+    if obj:IsA("Model") then
+        local primary = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+        
+        if primary then
+            npcstab:CreateButton({
+                Name = obj.Name,
+                Callback = function()
+                    local me = game.Players.LocalPlayer.Character
+                    if me and me:FindFirstChild("HumanoidRootPart") then
+                        me:PivotTo(primary.CFrame*CFrame.new(0,0,-3))
+                    end
+                end
+            })
+        end
+    end
+end
+    
+local npcs2 = npcstab:CreateSection("Misc")
+for _, obj in pairs(workspace.Npc.Misc:GetChildren()) do
+    if obj:IsA("Model") then
+        local primary = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+        
+        if primary then
+            npcstab:CreateButton({
+                Name = obj.Name,
+                Callback = function()
+                    local me = game.Players.LocalPlayer.Character
+                    if me and me:FindFirstChild("HumanoidRootPart") then
+                        me:PivotTo(primary.CFrame*CFrame.new(0,0,-3))
+                    end
+                end
+            })
+        end
+    end
+end
+
+local npcs3 = npcstab:CreateSection("Sword")
+for _, obj in pairs(workspace.Npc.Sword:GetChildren()) do
+    if obj:IsA("Model") then
+        local primary = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+        
+        if primary then
+            npcstab:CreateButton({
+                Name = obj.Name,
+                Callback = function()
+                    local me = game.Players.LocalPlayer.Character
+                    if me and me:FindFirstChild("HumanoidRootPart") then
+                        me:PivotTo(primary.CFrame*CFrame.new(0,0,-3))
                     end
                 end
             })
@@ -1604,7 +1681,6 @@ for _, obj in pairs(workspace.Map:GetChildren()) do
 end
 
 local MiscTab = MainWindow:CreateTab("Misc")
-
 local AutoClick = MiscTab:CreateSection("Auto Click")
 local UserInputService = game:GetService("UserInputService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
