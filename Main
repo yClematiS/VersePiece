@@ -1194,12 +1194,24 @@ local autolootv2 = MainTab:CreateToggle({
     Callback = function(Value)
         AutoWLootv2 = Value
         local hidehud = game:GetService("Players").LocalPlayer.PlayerGui.HUD
+        local hidemobilebutton = game:GetService("Players").LocalPlayer.PlayerGui.Mobile
+        local disablemobilebutton = hidemobilebutton.Check
+
+        local UserInputService = game:GetService("UserInputService")
         if not AutoWLootv2 then
             IsLootingChest = false
             hidehud.Enabled = true
-        else
-            hidehud.Enabled = false
+        if UserInputService.TouchEnabled then
+            disablemobilebutton.Disabled = true
+            hidemobilebutton.Enabled = true
         end
+            else
+            hidehud.Enabled = false
+        if UserInputService.TouchEnabled then
+            disablemobilebutton.Enabled = true
+        end
+        end
+
         if lootTaskv2 then
             task.cancel(lootTaskv2)
         end
