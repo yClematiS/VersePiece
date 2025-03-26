@@ -129,6 +129,8 @@ function disableSelectable()
         end
     end
 end
+disableSelectable()
+
 
 local MainTab = MainWindow:CreateTab("Auto Farm")
 
