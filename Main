@@ -114,23 +114,28 @@ IsLootingChest = false
 --OPTIMIZE-----------------------------------------------------------------------------------
 
 task.spawn(function()
-local player = game:GetService("Players").LocalPlayer
-local playerGui = player:FindFirstChild("PlayerGui")
-
-if playerGui then
-    local targets = {"HUD", "Mobile"}
-    for _, targetName in ipairs(targets) do
-        local targetGui = playerGui:FindFirstChild(targetName)
-        if targetGui then
-            for _, guiObject in pairs(targetGui:GetDescendants()) do
-                if guiObject:IsA("GuiObject") then
-                    guiObject.Selectable = false
+    while true do
+        local player = game:GetService("Players").LocalPlayer
+        if player then
+            local playerGui = player:FindFirstChild("PlayerGui")
+            if playerGui then
+                local targets = {"HUD", "Mobile"}
+                for _, targetName in ipairs(targets) do
+                    local targetGui = playerGui:FindFirstChild(targetName)
+                    if targetGui then
+                        for _, guiObject in pairs(targetGui:GetDescendants()) do
+                            if guiObject:IsA("GuiObject") then
+                                guiObject.Selectable = false
+                            end
+                        end
+                    end
                 end
             end
         end
+        task.wait(1)
     end
-end
 end)
+
 
 local MainTab = MainWindow:CreateTab("Auto Farm")
 
