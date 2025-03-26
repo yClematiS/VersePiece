@@ -113,7 +113,7 @@ IsLootingChest = false
 
 --OPTIMIZE-----------------------------------------------------------------------------------
 local player = game:GetService("Players").LocalPlayer
-local function disableSelectable()
+function disableSelectable()
     local playerGui = player:FindFirstChild("PlayerGui")
     if playerGui then
         local targets = {"HUD", "Mobile"}
@@ -129,12 +129,6 @@ local function disableSelectable()
         end
     end
 end
-disableSelectable()
-player.CharacterAdded:Connect(function()
-    disableSelectable()
-end)
-
-
 
 local MainTab = MainWindow:CreateTab("Auto Farm")
 
@@ -1243,6 +1237,9 @@ local autolootv2 = MainTab:CreateToggle({
                     if chest.Name == "Raid Chest" and not IsLootingChest then
                         IsLootingChest = true
                         task.spawn(function()
+                            pcall(function ()
+                                disableSelectable()
+                            end)
                             pcall(function()
                                 tptochest(chest)
                             end)
