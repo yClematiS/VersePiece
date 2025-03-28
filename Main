@@ -1890,6 +1890,28 @@ local savepower = MiscTab:CreateToggle({
     end,
 })
 
+framelocker = false
+local framelock = MiscTab:CreateToggle({
+    Name = "Frame Rate Locker",
+    CurrentValue = false,
+    Flag = "framelocker",
+    Callback = function(Value)
+        framelocker = Value
+        if framelocker then
+            task.spawn(function()
+                while framelocker do
+                    if framelocker then
+                        setfpscap(_G.psingfps)
+                    end
+                    print("FPS set to: " .. _G.psingfps)
+                    task.wait(10)
+                end
+            end)
+        else
+            setfpscap(60)
+        end
+    end,
+})
 
 local ClearMobs = MiscTab:CreateSection("Clear All Loaded Mobs")
 local ClearMob = MiscTab:CreateButton({
