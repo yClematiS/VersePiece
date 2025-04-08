@@ -881,7 +881,7 @@ local GoToMob = MainTab:CreateToggle({
  Bosses = {
     "Lancer [Lv.???]",
     "Fallen Angel [Lv.???]",
-    "D4C [Lv.???]",
+    "Gilgamesh [Lv.???]",
     "Boss Island",
     "Skull"
 }
@@ -955,8 +955,8 @@ local AutoBosses = MainTab:CreateToggle({
                     bossLocation = workspace.Main.RaidBoss
                 elseif bossName == "Fallen Angel [Lv.???]" then
                     bossLocation = workspace.Main["Fallen Angel"]
-                elseif bossName == "D4C [Lv.???]" then
-                    bossLocation = workspace.Main.Valentine
+                elseif bossName == "Gilgamesh [Lv.???]" then
+                    bossLocation = workspace.Main.Desert.Gilgamesh
                 elseif bossName == "Boss Island" then
                     bossLocation = workspace.Main:FindFirstChild("Boss")
                 elseif bossName == "Skull" then
@@ -1609,7 +1609,7 @@ for _, obj in pairs(workspace.Map:GetChildren()) do
                 Callback = function()
                     local me = game.Players.LocalPlayer.Character
                     if me and me:FindFirstChild("HumanoidRootPart") then
-                        me:PivotTo(primary.CFrame*CFrame.new(0,0,0))
+                        me:PivotTo(primary.CFrame*CFrame.new(0,50,0))
                     end
                 end
             })
