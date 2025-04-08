@@ -1265,6 +1265,63 @@ local autolootv2 = MainTab:CreateToggle({
     end,
 })
 
+local Quest = MainWindow:CreateTab("Quest")
+
+local function getrepquest()
+    local mission = workspace.Npc.Quest.Mission
+    local togetquest = mission.HumanoidRootPart
+    local ply = game.Players.LocalPlayer.Character
+    ply.HumanoidRootPart.CFrame = togetquest.CFrame
+
+    local prompt = mission.ProximityPrompt
+    prompt.HoldDuration = 0
+    prompt:InputHoldBegin()
+    task.wait(0.01)
+    prompt:InputHoldEnd()
+end
+
+local Getting_Quest = false
+local GetRepQuest = Quest:CreateToggle({
+    Name = "Auto Farm Reputation",
+    CurrentValue = false,
+    Flag = "Mission",
+    Callback = function(Value)
+        Getting_Quest = Value
+        if Getting_Quest then
+            task.spawn(function()
+                while Getting_Quest do
+                    task.wait(1)
+
+                    pcall(function()
+                        local player = game.Players.LocalPlayer
+                        local character = player and player.Character
+
+                        if not character or (character:FindFirstChild("Humanoid") and character.Humanoid.Health <= 0) then
+                            task.wait(2)
+                            return
+                        end
+
+                        local questGui = player.PlayerGui:FindFirstChild("Mission Quest")
+                        if questGui and questGui:FindFirstChild("Frame") then
+                            local hasMission = false
+                            for _, v in pairs(questGui.Frame:GetChildren()) do
+                                if v.Name == "MissionData" then
+                                    hasMission = true
+                                    break
+                                end
+                            end
+
+                            if not hasMission then
+                                getrepquest()
+                            end
+                        end
+                    end)
+                end
+            end)
+        end
+    end,
+})
+
 local ItemTap = MainWindow:CreateTab("Items")
 local Minning = false
 local minedOre = {}
@@ -1523,7 +1580,6 @@ local Afindwisp = ItemTap:CreateToggle({
         end
     end,
 })
-
 
 local location = MainWindow:CreateTab("Teleport")
 local gotoplayer = location:CreateSection("Players")
