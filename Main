@@ -1266,6 +1266,8 @@ local autolootv2 = MainTab:CreateToggle({
 })
 
 local Quest = MainWindow:CreateTab("Quest")
+Getting_Quest = false
+tasktodo = ""
 
 local function getrepquest()
     local mission = workspace.Npc.Quest.Mission
@@ -1280,7 +1282,112 @@ local function getrepquest()
     prompt:InputHoldEnd()
 end
 
-local Getting_Quest = false
+local function dotask()
+    local ply = game.Players.LocalPlayer.Character
+
+    if tasktodo == "Find The Goblet around forest" then
+        local thisgob = workspace.Main["Mission Quest"]["2"].Goblet
+        local prompt = thisgob.ProximityPrompt
+        prompt.HoldDuration = 0
+        prompt.RequiresLineOfSight = false
+        ply.HumanoidRootPart.CFrame = thisgob.CFrame
+        prompt:InputHoldBegin()
+        task.wait(0.01)
+        prompt:InputHoldEnd()
+    end
+
+    if tasktodo == "Close The Shadow Portal" then
+        local thispor = workspace.Main["Mission Quest"]["5"].Portal
+        local prompt = thispor.ProximityPrompt
+        prompt.HoldDuration = 0
+        prompt.RequiresLineOfSight = false
+        prompt.Enabled = true
+        ply.HumanoidRootPart.CFrame = thispor.CFrame
+        prompt:InputHoldBegin()
+        task.wait(0.01)
+        prompt:InputHoldEnd()
+    end
+
+    if tasktodo == "Rescue  Civilains" then
+        local civs = workspace.Main["Mission Quest"]["4"]:GetChildren()  
+        for _, thisciv in ipairs(civs) do
+            if thisciv:IsA("Model") then
+                local hrp = thisciv:FindFirstChild("HumanoidRootPart")
+                local prompt = thisciv:FindFirstChildWhichIsA("ProximityPrompt")
+                
+                if hrp and prompt then
+                    local ply = game.Players.LocalPlayer.Character
+                    if ply and ply:FindFirstChild("HumanoidRootPart") then
+                        ply.HumanoidRootPart.CFrame = hrp.CFrame
+                        prompt.HoldDuration = 0
+                        prompt.RequiresLineOfSight = false
+                        prompt:InputHoldBegin()
+                        task.wait(0.01)
+                        prompt:InputHoldEnd()
+                        break
+                    end
+                end
+            end
+        end
+    end     
+
+    if tasktodo == "Collect  Curse object in chest around forest" then
+        local chests = workspace.Main["Mission Quest"]["1"]:GetChildren()
+        for _, thischest in ipairs(chests) do
+            if thischest:IsA("Model") then
+                local hrp = thischest:FindFirstChild("HumanoidRootPart")
+                local prompt = hrp and hrp:FindFirstChildWhichIsA("ProximityPrompt")
+                
+                if hrp and prompt then
+                    local ply = game.Players.LocalPlayer.Character
+                    if ply and ply:FindFirstChild("HumanoidRootPart") then
+                        ply.HumanoidRootPart.CFrame = hrp.CFrame
+                        prompt.HoldDuration = 0
+                        prompt.RequiresLineOfSight = false
+                        prompt:InputHoldBegin()
+                        task.wait(0.01)
+                        prompt:InputHoldEnd()
+                        break
+                    end
+                end
+            end
+        end
+    end    
+
+    if tasktodo == "Defeat Lightning Sorceror" then
+        local bossModel = workspace:FindFirstChild("Main") and workspace.Main:FindFirstChild("Forest")
+            and workspace.Main.Forest:FindFirstChild("Kashimo")
+            and workspace.Main.Forest.Kashimo:FindFirstChild("Kashimo [Lv.???]")
+
+        if bossModel and bossModel:FindFirstChild("Humanoid") and bossModel.Humanoid.Health > 0 then
+            local hrp = bossModel:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local targetCFrame = hrp.CFrame * CFrame.new(0, 0, defaultrange)
+                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = targetCFrame
+            end
+        end
+    end
+
+    if tasktodo == "Clear  Curse Spirit around forest" then
+        local spirits = workspace.Main.Forest:FindFirstChild("Curse Spirit")
+        if spirits then
+            for _, spirit in ipairs(spirits:GetChildren()) do
+                if spirit:IsA("Model") and spirit:FindFirstChild("Humanoid") and spirit:FindFirstChild("HumanoidRootPart") then
+                    if spirit.Humanoid.Health > 0 then
+                        local hrp = spirit:FindFirstChild("HumanoidRootPart")
+                        if hrp then
+                            local targetCFrame = hrp.CFrame * CFrame.new(0, 0, defaultrange)
+                            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = targetCFrame
+                            task.wait(0.1)
+                            break
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
 local GetRepQuest = Quest:CreateToggle({
     Name = "Auto Farm Reputation",
     CurrentValue = false,
@@ -1307,9 +1414,13 @@ local GetRepQuest = Quest:CreateToggle({
                             for _, v in pairs(questGui.Frame:GetChildren()) do
                                 if v.Name == "MissionData" then
                                     hasMission = true
+                                    local gettask = v.Bar.Quest.Text
+                                    local cleanTask = gettask:gsub("%d+", ""):gsub("^%s*(.-)%s*$", "%1")
+                                    tasktodo = tostring(cleanTask)
+                                    dotask()
                                     break
                                 end
-                            end
+                            end                            
 
                             if not hasMission then
                                 getrepquest()
