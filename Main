@@ -989,130 +989,10 @@ local AutoBosses = MainTab:CreateToggle({
     end,
 })
 
-AutoWLoot = false
-local lootTask = nil
-
-local function teleportToChest(chest)
-    if chest and chest:IsA("Part") and chest:FindFirstChild("PrimaryPart") then
-        for i = 1, 5 do
-            task.wait(0.25)
-            local player = game.Players.LocalPlayer
-            if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                player.Character.HumanoidRootPart.CFrame = chest.PrimaryPart.CFrame + Vector3.new(0, 10, 4)
-                
-                local camera = game.Workspace.CurrentCamera
-                if camera then
-                    camera.CFrame = CFrame.new(chest.PrimaryPart.Position + Vector3.new(0, 5, 10), chest.PrimaryPart.Position)
-                    camera.FieldOfView = 70
-                end
-            end
-        end
-    end
-end
-
-local function interactWithChest(chest)
-    if chest then
-        for _, child in pairs(chest:GetChildren()) do
-            if child:IsA("ProximityPrompt") then
-                child.HoldDuration = 0
-                child.MaxActivationDistance = 1000000
-                child.RequiresLineOfSight = false
-                task.wait(0.1)
-                for i = 1, 5 do
-                    task.spawn(function ()
-                        pcall(function()
-                            child:InputHoldBegin()
-                            task.wait(child.HoldDuration)
-                            child:InputHoldEnd()
-                        end)
-                    end)
-                    task.wait(0.25)
-                end
-            end
-        end
-    end
-end
-
-local function lootMaterials()
-    local playerGui = game.Players.LocalPlayer:FindFirstChild("PlayerGui")
-    if not playerGui then return end
-
-    local lootGui = playerGui:FindFirstChild("Loot")
-    if not lootGui then return end
-
-    local mainFrame = lootGui:FindFirstChild("Main")
-    if not mainFrame then return end
-
-    local invFrame = mainFrame:FindFirstChild("Iinv")
-    if not invFrame then return end
-
-    local materialFrame = invFrame:FindFirstChild("Material")
-    if not materialFrame then return end
-
-    local cancelButton = invFrame:FindFirstChild("Cancel")
-    if cancelButton then
-        cancelButton.Parent = materialFrame
-    end
-end
-
-local AutoLootChests = MainTab:CreateToggle({
-    Name = "Auto Loot Chest",
-    CurrentValue = false,
-    Flag = "ALootChest",
-    Callback = function(Value)
-        AutoWLoot = Value
-
-        if not AutoWLoot then
-            IsLootingChest = false
-        end
-        if lootTask then
-            task.cancel(lootTask)
-        end
-
-        pcall(function()
-            local player = game.Players.LocalPlayer
-            local character = player and player.Character
-            if not character or character:FindFirstChild("Humanoid") and character.Humanoid.Health <= 0 then
-                IsLootingChest = false
-                task.wait(2)
-                return
-            end
-        end)
-
-        lootTask = task.spawn(function()
-            while AutoWLoot do
-                task.wait(0.5)
-                for _, chest in pairs(workspace.Main:GetChildren()) do
-                    if chest.Name == "Raid Chest" and not IsLootingChest then
-                        IsLootingChest = true
-                        task.spawn(function()
-                            pcall(function()
-                                teleportToChest(chest)
-                            end)
-                            pcall(function()
-                                interactWithChest(chest)
-                            end)
-
-                            task.wait(2)
-
-                            pcall(function()
-                                lootMaterials()
-                            end)
-                        end)
-
-                        task.wait(3)
-                        IsLootingChest = false
-                    end
-                end
-            end
-        end)
-    end,
-})
-
 AutoWLootv2 = false
 local lootTaskv2 = nil
 
-local function tptochest(chest)
+function tptochest(chest)
     if chest and chest:IsA("Part") and chest:FindFirstChild("PrimaryPart") then
         for i = 1, 5 do
             task.wait(0.3)
@@ -1124,7 +1004,7 @@ local function tptochest(chest)
     end
 end
 
-local function interactChest(chest)
+function interactChest(chest)
     if chest then
         for _, child in pairs(chest:GetChildren()) do
             if child:IsA("ProximityPrompt") then
@@ -1147,12 +1027,12 @@ local function interactChest(chest)
     end
 end
 
-local function autoloot()
+function autoloot()
     local playerGui = game.Players.LocalPlayer:FindFirstChild("PlayerGui")
     if not playerGui then return end
-
     local lootGui = playerGui:FindFirstChild("Loot")
-    if not lootGui then 
+    if not lootGui then
+        IsLootingChest = false
         local player = game.Players.LocalPlayer
         local character = player and player.Character
         if character and character:FindFirstChild("HumanoidRootPart") then
@@ -1201,14 +1081,21 @@ local function autoloot()
 
     pressKey(Enum.KeyCode.BackSlash)
     task.wait(0.5)
-    for i = 1, 60 do
+    for i = 1, 100 do
+        local playerGui = game.Players.LocalPlayer:FindFirstChild("PlayerGui")
+        local lootGui = playerGui and playerGui:FindFirstChild("Loot")
+        if not lootGui or not lootGui:FindFirstChild("Main") then
+            IsLootingChest = false
+            break
+        end
         pressKey(Enum.KeyCode.Return)
-        task.wait(0.8)
+        task.wait(0.5)
     end
+    IsLootingChest = false
 end
 
 local autolootv2 = MainTab:CreateToggle({
-    Name = "Auto Full Loot Chest [Full Auto Beta]",
+    Name = "Auto Loot Chest",
     CurrentValue = false,
     Flag = "ALootChestFauto",
     Callback = function(Value)
@@ -1231,7 +1118,6 @@ local autolootv2 = MainTab:CreateToggle({
                 return
             end
         end)
-
         lootTaskv2 = task.spawn(function()
             while AutoWLootv2 do
                 task.wait(0.5)
@@ -1255,9 +1141,7 @@ local autolootv2 = MainTab:CreateToggle({
                                 autoloot()
                             end)
                         end)
-
                         task.wait(3)
-                        IsLootingChest = false
                     end
                 end
             end
@@ -1332,11 +1216,23 @@ local function dotask()
         local gate = workspace.Main["Mission Quest 2"]["1"]["1"]
         local prompt = gate.ProximityPrompt
         local ply = game.Players.LocalPlayer
+        if not gate:FindFirstChild("PathStanding") then
+            local platform = Instance.new("Part")
+            platform.Name = "PathStanding"
+            platform.Size = Vector3.new(20, 1, 20)
+            platform.Position = gate.Position - Vector3.new(0, gate.Size.Y / 2 - 5, 0)
+            platform.Anchored = true
+            platform.Transparency = 1
+            platform.CanCollide = true
+            platform.Parent = gate
+        end
         prompt.HoldDuration = 0
+        prompt.MaxActivationDistance = 100
         prompt.RequiresLineOfSight = false
         prompt.Enabled = true
-        ply.Character.HumanoidRootPart.CFrame = gate.CFrame
+        ply.Character.HumanoidRootPart.CFrame = gate.CFrame + Vector3.new(0, 3, 0)
         prompt:InputHoldBegin()
+        task.wait(0.01)
         prompt:InputHoldEnd()
     end    
     
