@@ -1281,6 +1281,7 @@ local function dotask()
     end
 
     if tasktodo == "Defeat Lightning Sorceror" then
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-9075.06348, 70.1370697, 6852.40576)
         local bossModel = workspace:FindFirstChild("Main") and workspace.Main:FindFirstChild("Forest")
             and workspace.Main.Forest:FindFirstChild("Kashimo")
             and workspace.Main.Forest.Kashimo:FindFirstChild("Kashimo [Lv.???]")
@@ -1295,6 +1296,7 @@ local function dotask()
     end
 
     if tasktodo == "Defeat Kurosagi Ichigo" then
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(3039.10522, 45.0512924, -9774.64258)
         local bossModel = workspace:FindFirstChild("Main") and workspace.Main:FindFirstChild("Hueco")
             and workspace.Main.Hueco:FindFirstChild("Ichigo")
             and workspace.Main.Hueco.Ichigo:FindFirstChild("Ichigo [Lv.???]")
@@ -1309,6 +1311,7 @@ local function dotask()
     end
 
     if tasktodo == "Clear  Curse Spirit around forest" then
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-9075.06348, 70.1370697, 6852.40576)
         local spirits = workspace.Main.Forest:FindFirstChild("Curse Spirit")
         if spirits then
             for _, spirit in ipairs(spirits:GetChildren()) do
@@ -1328,6 +1331,7 @@ local function dotask()
     end
 
     if tasktodo == "Clear  Arrrancar around Huecomundo" then
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(3039.10522, 45.0512924, -9774.64258)
         local arrrancars = workspace.Main.Hueco.Arrancar
         if arrrancars then
             for _, spirit in ipairs(arrrancars:GetChildren()) do
