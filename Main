@@ -1269,13 +1269,26 @@ local Quest = MainWindow:CreateTab("Quest")
 Getting_Quest = false
 tasktodo = ""
 
-local function getrepquest()
+local function getrepquest1()
     local mission = workspace.Npc.Quest.Mission
     local togetquest = mission.HumanoidRootPart
     local ply = game.Players.LocalPlayer.Character
     ply.HumanoidRootPart.CFrame = togetquest.CFrame
 
     local prompt = mission.ProximityPrompt
+    prompt.HoldDuration = 0
+    prompt:InputHoldBegin()
+    task.wait(0.01)
+    prompt:InputHoldEnd()
+end
+
+local function getrepquest2()
+    local mission = workspace.Npc.Quest["Mission 2"]
+    local togetquest = mission.Union
+    local ply = game.Players.LocalPlayer.Character
+    ply.HumanoidRootPart.CFrame = togetquest.CFrame
+
+    local prompt = togetquest.ProximityPrompt
     prompt.HoldDuration = 0
     prompt:InputHoldBegin()
     task.wait(0.01)
@@ -1303,6 +1316,30 @@ local function dotask()
         prompt.RequiresLineOfSight = false
         prompt.Enabled = true
         ply.HumanoidRootPart.CFrame = thispor.CFrame
+        prompt:InputHoldBegin()
+        task.wait(0.01)
+        prompt:InputHoldEnd()
+    end
+
+    if tasktodo == "Steal  The object around Huecomundo" then
+        local obj = workspace.Main["Mission Quest 2"]["2"].Object
+        local prompt = obj.ProximityPrompt
+        prompt.HoldDuration = 0
+        prompt.RequiresLineOfSight = false
+        prompt.Enabled = true
+        ply.HumanoidRootPart.CFrame = obj.CFrame
+        prompt:InputHoldBegin()
+        task.wait(0.01)
+        prompt:InputHoldEnd()
+    end
+
+    if tasktodo == "Close The Huecomundo Gate" then
+        local gate = workspace.Main["Mission Quest 2"]["1"]["1"]
+        local prompt = gate.ProximityPrompt
+        prompt.HoldDuration = 0
+        prompt.RequiresLineOfSight = false
+        prompt.Enabled = true
+        ply.HumanoidRootPart.CFrame = gate.CFrame
         prompt:InputHoldBegin()
         task.wait(0.01)
         prompt:InputHoldEnd()
@@ -1352,12 +1389,26 @@ local function dotask()
                 end
             end
         end
-    end    
+    end
 
     if tasktodo == "Defeat Lightning Sorceror" then
         local bossModel = workspace:FindFirstChild("Main") and workspace.Main:FindFirstChild("Forest")
             and workspace.Main.Forest:FindFirstChild("Kashimo")
             and workspace.Main.Forest.Kashimo:FindFirstChild("Kashimo [Lv.???]")
+
+        if bossModel and bossModel:FindFirstChild("Humanoid") and bossModel.Humanoid.Health > 0 then
+            local hrp = bossModel:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local targetCFrame = hrp.CFrame * CFrame.new(0, 0, defaultrange)
+                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = targetCFrame
+            end
+        end
+    end
+
+    if tasktodo == "Defeat Kurosagi Ichigo" then
+        local bossModel = workspace:FindFirstChild("Main") and workspace.Main:FindFirstChild("Hueco")
+            and workspace.Main.Hueco:FindFirstChild("Ichigo")
+            and workspace.Main.Hueco.Ichigo:FindFirstChild("Ichigo [Lv.???]")
 
         if bossModel and bossModel:FindFirstChild("Humanoid") and bossModel.Humanoid.Health > 0 then
             local hrp = bossModel:FindFirstChild("HumanoidRootPart")
@@ -1386,7 +1437,42 @@ local function dotask()
             end
         end
     end
+
+    if tasktodo == "Clear  Arrrancar around Huecomundo" then
+        local arrrancars = workspace.Main.Hueco.Arrancar
+        if arrrancars then
+            for _, spirit in ipairs(arrrancars:GetChildren()) do
+                if spirit:IsA("Model") and spirit:FindFirstChild("Humanoid") and spirit:FindFirstChild("HumanoidRootPart") then
+                    if spirit.Humanoid.Health > 0 then
+                        local hrp = spirit:FindFirstChild("HumanoidRootPart")
+                        if hrp then
+                            local targetCFrame = hrp.CFrame * CFrame.new(0, 0, defaultrange)
+                            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = targetCFrame
+                            task.wait(0.1)
+                            break
+                        end
+                    end
+                end
+            end
+        end
+    end
 end
+MissionSelect = "Mission1"
+
+local Missions = Quest:CreateDropdown({
+    Name = "Select Missions",
+    Options = {
+        "Mission1",
+        "Mission2",
+    },
+    CurrentOption = "Mission1",
+    MultipleOptions = false,
+    Flag = "Mission_Select",
+    Callback = function(Option)
+        local selected = type(Option) == "table" and Option[1] or Option
+        MissionSelect = tostring(selected)
+    end,
+})
 
 local GetRepQuest = Quest:CreateToggle({
     Name = "Auto Farm Reputation",
@@ -1398,7 +1484,6 @@ local GetRepQuest = Quest:CreateToggle({
             task.spawn(function()
                 while Getting_Quest do
                     task.wait(1)
-
                     pcall(function()
                         local player = game.Players.LocalPlayer
                         local character = player and player.Character
@@ -1420,14 +1505,22 @@ local GetRepQuest = Quest:CreateToggle({
                                     dotask()
                                     break
                                 end
-                            end                            
+                            end
 
                             if not hasMission then
-                                getrepquest()
+                                if MissionSelect == "Mission1" then
+                                    getrepquest1()
+                                elseif MissionSelect == "Mission2" then
+                                    getrepquest2()
+                                end
                             end
                         end
                     end)
                 end
+                task.spawn(function ()
+                    local bangcam = workspace.Map.Bleach:GetChildren()[16]
+                    bangcam:Destroy()
+                end)
             end)
         end
     end,
