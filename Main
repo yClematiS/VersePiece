@@ -1278,7 +1278,6 @@ local function getrepquest1()
     local prompt = mission.ProximityPrompt
     prompt.HoldDuration = 0
     prompt:InputHoldBegin()
-    task.wait(0.01)
     prompt:InputHoldEnd()
 end
 
@@ -1291,7 +1290,6 @@ local function getrepquest2()
     local prompt = togetquest.ProximityPrompt
     prompt.HoldDuration = 0
     prompt:InputHoldBegin()
-    task.wait(0.01)
     prompt:InputHoldEnd()
 end
 
@@ -1305,7 +1303,6 @@ local function dotask()
         prompt.RequiresLineOfSight = false
         ply.HumanoidRootPart.CFrame = thisgob.CFrame
         prompt:InputHoldBegin()
-        task.wait(0.01)
         prompt:InputHoldEnd()
     end
 
@@ -1317,7 +1314,6 @@ local function dotask()
         prompt.Enabled = true
         ply.HumanoidRootPart.CFrame = thispor.CFrame
         prompt:InputHoldBegin()
-        task.wait(0.01)
         prompt:InputHoldEnd()
     end
 
@@ -1329,22 +1325,21 @@ local function dotask()
         prompt.Enabled = true
         ply.HumanoidRootPart.CFrame = obj.CFrame
         prompt:InputHoldBegin()
-        task.wait(0.01)
         prompt:InputHoldEnd()
     end
 
     if tasktodo == "Close The Huecomundo Gate" then
         local gate = workspace.Main["Mission Quest 2"]["1"]["1"]
         local prompt = gate.ProximityPrompt
+        local ply = game.Players.LocalPlayer
         prompt.HoldDuration = 0
         prompt.RequiresLineOfSight = false
         prompt.Enabled = true
-        ply.HumanoidRootPart.CFrame = gate.CFrame
+        ply.Character.HumanoidRootPart.CFrame = gate.CFrame
         prompt:InputHoldBegin()
-        task.wait(0.01)
         prompt:InputHoldEnd()
-    end
-
+    end    
+    
     if tasktodo == "Rescue  Civilains" then
         local civs = workspace.Main["Mission Quest"]["4"]:GetChildren()  
         for _, thisciv in ipairs(civs) do
@@ -1359,7 +1354,6 @@ local function dotask()
                         prompt.HoldDuration = 0
                         prompt.RequiresLineOfSight = false
                         prompt:InputHoldBegin()
-                        task.wait(0.01)
                         prompt:InputHoldEnd()
                         break
                     end
@@ -1382,7 +1376,6 @@ local function dotask()
                         prompt.HoldDuration = 0
                         prompt.RequiresLineOfSight = false
                         prompt:InputHoldBegin()
-                        task.wait(0.01)
                         prompt:InputHoldEnd()
                         break
                     end
@@ -1512,7 +1505,7 @@ local GetRepQuest = Quest:CreateToggle({
                         local currentPos = camera.CFrame.Position
                         local newPosition = currentPos + Vector3.new(0, 5, 0)
 
-                        local tiltDown = CFrame.Angles(math.rad(-60), 0, 0)
+                        local tiltDown = CFrame.Angles(math.rad(-80), 0, 0)
 
                         camera.CFrame = CFrame.new(newPosition) * tiltDown
 
