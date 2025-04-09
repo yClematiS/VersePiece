@@ -1539,6 +1539,7 @@ local GetRepQuest = Quest:CreateToggle({
         end
         if not Getting_Quest then
             tasktodo = ""
+			task.wait(4)
             local camera = game.Workspace.CurrentCamera
             camera.FieldOfView = 70
         end
