@@ -1501,6 +1501,12 @@ local GetRepQuest = Quest:CreateToggle({
                             return
                         end
 
+                        if IsMining or IsWorldBoss or IsFindingWhip or IsLootingChest then
+                            print("Auto Farm Rep Paused")
+                            task.wait(1)
+                            return
+                        end
+
                         local camera = game.Workspace.CurrentCamera
                         camera.FieldOfView = 120
                         local currentPos = camera.CFrame.Position
