@@ -1481,6 +1481,14 @@ local GetRepQuest = Quest:CreateToggle({
     Callback = function(Value)
         Getting_Quest = Value
         if Getting_Quest then
+            task.spawn(function ()
+                local bangcam = workspace.Map.Bleach
+                for _, v in pairs(bangcam:GetChildren()) do
+                    if v:IsA("Part") then
+                        v:Destroy()
+                    end
+                end
+            end)
             task.spawn(function()
                 while Getting_Quest do
                     task.wait(1)
@@ -1492,6 +1500,16 @@ local GetRepQuest = Quest:CreateToggle({
                             task.wait(2)
                             return
                         end
+
+                        local camera = game.Workspace.CurrentCamera
+                        camera.FieldOfView = 120
+                        local currentPos = camera.CFrame.Position
+                        local newPosition = currentPos + Vector3.new(0, 5, 0)
+
+                        local tiltDown = CFrame.Angles(math.rad(-60), 0, 0)
+
+                        camera.CFrame = CFrame.new(newPosition) * tiltDown
+
 
                         local questGui = player.PlayerGui:FindFirstChild("Mission Quest")
                         if questGui and questGui:FindFirstChild("Frame") then
@@ -1517,11 +1535,12 @@ local GetRepQuest = Quest:CreateToggle({
                         end
                     end)
                 end
-                task.spawn(function ()
-                    local bangcam = workspace.Map.Bleach:GetChildren()[16]
-                    bangcam:Destroy()
-                end)
             end)
+        end
+        if not Getting_Quest then
+            tasktodo = ""
+            local camera = game.Workspace.CurrentCamera
+            camera.FieldOfView = 70
         end
     end,
 })
