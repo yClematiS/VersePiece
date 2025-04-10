@@ -56,11 +56,14 @@ end
 local function startTypingAnimation3()
     local randomText1 = getmaincode()
     local randomText2 = getcode()
-    random_name = "[🌺] Clematis Hub | Free | Session : "..randomText1.."-"..randomText2
+    local username = game.Players.LocalPlayer.Character.Name
+    random_name = " | Clematis Hub | " .. username .. " | Session : ( "..randomText1.."-"..randomText2.." ) "
 end
 spawn(startTypingAnimation3)
+
 local usernames = game.Players.LocalPlayer.Character.Name
 local pid = tostring(game.PlaceId)
+
 print("Loading Lib")
 _G.theme = "Amethyst"
 wait(0.2)
@@ -69,7 +72,7 @@ print("Ui Lib Loaded")
 wait(1)
 print("Loading Function")
 local MainWindow = Rayfield:CreateWindow({
-    Name = random_name or "[🌺] Clematis Hub | Err Loading | Session : Error!",
+    Name = random_name or "Clematis Hub | Err Loading | Session : ( Error! )",
     Icon = 0,
     LoadingTitle = "Loading!",
     LoadingSubtitle = "Script By Seaweed_hunter",
@@ -128,7 +131,9 @@ function disableSelectable()
 end
 disableSelectable()
 
-local MainTab = MainWindow:CreateTab("Combat")
+
+local MainTab = MainWindow:CreateTab("Auto Farm")
+
 local Tools = MainTab:CreateSection("Tools")
 local tool = {}
 local playertools
@@ -229,6 +234,8 @@ player.CharacterAdded:Connect(function()
     end
 end)
 
+
+
 local Attack = MainTab:CreateSection("M1")
 local mfastattack = false
 local userInputService = game:GetService("UserInputService")
@@ -279,36 +286,40 @@ local fastattack = MainTab:CreateToggle({
     end
 })
 
+
 local autoattack = false
 local AutoAttack = MainTab:CreateToggle({
-    Name = "Auto Attack",
+    Name = "Auto Hit [Slow No Animation]",
     CurrentValue = false,
     Flag = "AHit",
     Callback = function(Value)
         autoattack = Value
         while autoattack do
-            local player = game.Players.LocalPlayer
-            local equippedTool = player.Character and player.Character:FindFirstChildOfClass("Tool")
-            if equippedTool then
-                local toolstype = equippedTool:FindFirstChildOfClass("BoolValue")
-                if toolstype then
-                    for i = 1, 5 do
-                        if not autoattack then break end
-                        pcall(function()
-                            local args = {
-                                [1] = "Server",
-                                [2] = toolstype.Name,
-                                [3] = "M1s",
-                                [4] = nil,
-                                [5] = equippedTool.Name
-                            }
-                            game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
-                        end)
-                        task.wait(0.2)
-                    end
-                    task.wait(1.5)
+            local success, err = pcall(function()
+                local player = game.Players.LocalPlayer
+                local equippedTool = player.Character and player.Character:FindFirstChildOfClass("Tool")
+
+                if not equippedTool then
+                    error("No tool equipped.")
                 end
-            end
+
+                local toolstype = equippedTool:FindFirstChildOfClass("BoolValue")
+                if not toolstype then
+                    error("No item type found in the tool.")
+                end
+
+                local args = {
+                    [1] = "Server",
+                    [2] = toolstype.Name,
+                    [3] = "M1s", 
+                    [4] = nil,
+                    [5] = equippedTool.Name
+                }
+                game:GetService("ReplicatedStorage").Remotes.Serverside:FireServer(unpack(args))
+            end)
+
+            task.wait(0.2)
+            if not autoattack then break end
         end
     end
 })
@@ -544,7 +555,7 @@ local killmobpercentDropdown = MainTab:CreateDropdown({
  end
  
  local ShowHitboxToggle = MainTab:CreateToggle({
-     Name = "Show Distance",
+     Name = "Mob Search Distance",
      CurrentValue = false,
      Flag = "Mob Search",
      Callback = function(Value)
@@ -573,7 +584,7 @@ local killmobpercentDropdown = MainTab:CreateDropdown({
      end
  end) 
 
-defaultstudmob = 150
+ defaultstudmob = 150
 local FindClosedMob = MainTab:CreateSlider({
     Name = "Find closest mob",
     Range = {10, 1040},
@@ -723,12 +734,10 @@ local FindClosedMob = MainTab:CreateSlider({
     end,
 })
 
-local FarmwTab = MainWindow:CreateTab("Auto Farm")
-local mobclosedd = FarmwTab:CreateSection("Auto Farm")
 local OnMob = false
 local Sittingsss = nil
 local bodyVelocity
-local GoToMob = FarmwTab:CreateToggle({
+local GoToMob = MainTab:CreateToggle({
     Name = "Go to closest mob",
     CurrentValue = false,
     Flag = "OnMob",
@@ -878,8 +887,8 @@ local GoToMob = FarmwTab:CreateToggle({
 }
 SecBosses = {}
 
-local WorldBossFarmer = FarmwTab:CreateSection("Auto World Boss")
-AWBoss = FarmwTab:CreateDropdown({
+local WorldBossFarmer = MainTab:CreateSection("Auto World Boss")
+AWBoss = MainTab:CreateDropdown({
     Name = "Select Boss",
     Options = Bosses,
     CurrentOption = {},
@@ -914,7 +923,7 @@ game.Players.LocalPlayer.Character:WaitForChild("Humanoid").Died:Connect(functio
     IsWorldBoss = false
 end)
 
-local AutoBosses = FarmwTab:CreateToggle({
+local AutoBosses = MainTab:CreateToggle({
     Name = "Auto Goto Boss [If spawned]",
     CurrentValue = false,
     Flag = "ABoss",
@@ -1086,7 +1095,7 @@ function autoloot()
     IsLootingChest = false
 end
 
-local autolootv2 = FarmwTab:CreateToggle({
+local autolootv2 = MainTab:CreateToggle({
     Name = "Auto Loot Chest",
     CurrentValue = false,
     Flag = "ALootChestFauto",
@@ -1141,7 +1150,7 @@ local autolootv2 = FarmwTab:CreateToggle({
     end,
 })
 
-local RepFarmer = FarmwTab:CreateSection("Auto Farm Reputation")
+local Quest = MainWindow:CreateTab("Quest")
 Getting_Quest = false
 tasktodo = ""
 
@@ -1343,7 +1352,7 @@ local function dotask()
 end
 MissionSelect = "Mission1"
 
-local Missions = FarmwTab:CreateDropdown({
+local Missions = Quest:CreateDropdown({
     Name = "Select Missions",
     Options = {
         "Mission1",
@@ -1358,7 +1367,7 @@ local Missions = FarmwTab:CreateDropdown({
     end,
 })
 
-local GetRepQuest = FarmwTab:CreateToggle({
+local GetRepQuest = Quest:CreateToggle({
     Name = "Auto Farm Reputation",
     CurrentValue = false,
     Flag = "Mission",
@@ -1436,7 +1445,7 @@ local GetRepQuest = FarmwTab:CreateToggle({
     end,
 })
 
-local Ore = FarmwTab:CreateSection("Auto Farm Ores")
+local ItemTap = MainWindow:CreateTab("Items")
 local Minning = false
 local minedOre = {}
 local oresToMine = 0
@@ -1572,7 +1581,7 @@ local function waitForOreFolder()
     return workspace.Main.Ore
 end
 
-local MinningToggle = FarmwTab:CreateToggle({
+local MinningToggle = ItemTap:CreateToggle({
     Name = "Auto Mine Ore",
     CurrentValue = false,
     Flag = "AOre",
@@ -1647,7 +1656,7 @@ local MinningToggle = FarmwTab:CreateToggle({
 })
 
 local MinningV2 = false
-local MinningV2Toggle = FarmwTab:CreateToggle({
+local MinningV2Toggle = ItemTap:CreateToggle({
     Name = "Auto Mine Ore V2",
     CurrentValue = false,
     Flag = "AOreV2",
@@ -1720,9 +1729,9 @@ local MinningV2Toggle = FarmwTab:CreateToggle({
     end,
 })
 
-local Wisp = FarmwTab:CreateSection("Auto Find Wisp")
+local Wisp = ItemTap:CreateSection("Auto Find Wisp")
 findingwisp = false
-local Afindwisp = FarmwTab:CreateToggle({
+local Afindwisp = ItemTap:CreateToggle({
     Name = "Auto Find Wisp",
     CurrentValue = false,
     Flag = "AFWisp",
