@@ -2062,6 +2062,20 @@ Clicking = MiscTab:CreateToggle({
 })
 
 local PlayerPlus = MiscTab:CreateSection("Player")
+local FreezeCam = MiscTab:CreateToggle({
+    Name = "Freeze Camera",
+    CurrentValue = false,
+    Flag = "FCam",
+    Callback = function(Value)
+        local cam = workspace.CurrentCamera
+        if Value then
+            cam.CameraType = Enum.CameraType.Scriptable
+        else
+            cam.CameraType = Enum.CameraType.Custom
+        end
+    end,
+})
+
 local defaultMaxZoom = game.Players.LocalPlayer.CameraMaxZoomDistance
 local Maxzoom = MiscTab:CreateToggle({
     Name = "Unlock Max Zoom",
