@@ -1086,6 +1086,7 @@ function autoloot()
         local lootGui = playerGui and playerGui:FindFirstChild("Loot")
         if not lootGui or not lootGui:FindFirstChild("Main") then
             IsLootingChest = false
+            tptochest(chest)
             break
         end
         pressKey(Enum.KeyCode.Return)
@@ -1227,7 +1228,6 @@ local function dotask()
             platform.Parent = gate
         end
         prompt.HoldDuration = 0
-        prompt.MaxActivationDistance = 100
         prompt.RequiresLineOfSight = false
         prompt.Enabled = true
         ply.Character.HumanoidRootPart.CFrame = gate.CFrame + Vector3.new(0, 3, 0)
@@ -1652,6 +1652,80 @@ local MinningToggle = ItemTap:CreateToggle({
                 warn("Error in mining loop:", err)
             end
         end
+    end,
+})
+
+local MinningV2 = false
+local MinningV2Toggle = ItemTap:CreateToggle({
+    Name = "Auto Mine Ore V2",
+    CurrentValue = false,
+    Flag = "AOreV2",
+    Callback = function(Value)
+        MinningV2 = Value
+        task.spawn(function()
+            while MinningV2 do
+                local oreFolder = workspace.Main:FindFirstChild("Ore")
+                local player = game.Players.LocalPlayer
+                local char = player and player.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+
+                if oreFolder and hrp then
+                    local models = {}
+                    for _, model in pairs(oreFolder:GetChildren()) do
+                        if model:IsA("Model") then
+                            if not model.PrimaryPart then
+                                for _, part in pairs(model:GetChildren()) do
+                                    if part:IsA("BasePart") then
+                                        model.PrimaryPart = part
+                                        break
+                                    end
+                                end
+                            end
+                            if model.PrimaryPart then
+                                table.insert(models, model)
+                            end
+                        end
+                    end
+
+                    local radius = 10
+                    local center = hrp.Position
+                    local count = #models
+                    for i, model in ipairs(models) do
+                        local angle = math.rad((i - 1) * (360 / count))
+                        local x = math.cos(angle) * radius
+                        local z = math.sin(angle) * radius
+                        local position = center + Vector3.new(x, -20, z)
+                        local cframe = CFrame.new(position, center)
+                        model:SetPrimaryPartCFrame(cframe)
+                    end
+                end
+
+                task.wait()
+            end
+        end)
+        task.spawn(function()
+            while MinningV2 do
+                local oreFolder = workspace.Main:FindFirstChild("Ore")
+                if oreFolder then
+                    for _, model in pairs(oreFolder:GetChildren()) do
+                        if model:IsA("Model") then
+                            for _, descendant in pairs(model:GetDescendants()) do
+                                if descendant:IsA("ProximityPrompt") and descendant.Name == "{}" then
+                                    descendant.Exclusivity = Enum.ProximityPromptExclusivity.AlwaysShow
+                                    descendant.MaxActivationDistance = 999999
+                                    descendant.RequiresLineOfSight = false
+                                    descendant:InputHoldBegin()
+                                    task.wait(descendant.HoldDuration)
+                                    descendant:InputHoldEnd()
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+                task.wait(0.5)
+            end
+        end)
     end,
 })
 
