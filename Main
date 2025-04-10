@@ -724,12 +724,12 @@ local FindClosedMob = MainTab:CreateSlider({
 })
 
 local FarmwTab = MainWindow:CreateTab("Auto Farm")
-local mobclose = FarmwTab:CreateSection("Auto Mob")
+local mobclosedd = FarmwTab:CreateSection("Auto Farm")
 local OnMob = false
 local Sittingsss = nil
 local bodyVelocity
 local GoToMob = FarmwTab:CreateToggle({
-    Name = "Farm Closest Mob",
+    Name = "Go to closest mob",
     CurrentValue = false,
     Flag = "OnMob",
     Callback = function(Value)
