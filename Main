@@ -1716,6 +1716,7 @@ local MinningV2Toggle = SecTap:CreateToggle({
                                     descendant.Exclusivity = Enum.ProximityPromptExclusivity.AlwaysShow
                                     descendant.MaxActivationDistance = 999999
                                     descendant.RequiresLineOfSight = false
+                                    descendant.KeyboardKeyCode = Enum.KeyCode.U
                                     descendant:InputHoldBegin()
                                     task.wait(descendant.HoldDuration)
                                     descendant:InputHoldEnd()
