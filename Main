@@ -1714,6 +1714,8 @@ local MinningV2Toggle = SecTap:CreateToggle({
                             for _, descendant in pairs(model:GetDescendants()) do
                                 if descendant:IsA("ProximityPrompt") and descendant.Name == "{}" then
                                     descendant.Exclusivity = Enum.ProximityPromptExclusivity.AlwaysShow
+                                    descendant.ActionText = ""
+                                    descendant.ObjectText = ""
                                     descendant.MaxActivationDistance = 999999
                                     descendant.RequiresLineOfSight = false
                                     descendant.KeyboardKeyCode = Enum.KeyCode.U
@@ -1723,6 +1725,65 @@ local MinningV2Toggle = SecTap:CreateToggle({
                                     break
                                 end
                             end
+                        end
+                    end
+                end
+                task.wait(0.5)
+            end
+        end)
+    end,
+})
+
+local MinningV3 = false
+local originalParents = {}
+local MinningV3Toggle = SecTap:CreateToggle({
+    Name = "Auto Mine Ore V3",
+    CurrentValue = false,
+    Flag = "AOreV3",
+    Callback = function(Value)
+        MinningV3 = Value
+
+        task.spawn(function()
+            local player = game.Players.LocalPlayer
+            local char = player and player.Character
+            local oreFolder = workspace.Main:FindFirstChild("Ore")
+
+            if MinningV3 then
+                if char and oreFolder then
+                    for _, prompt in ipairs(oreFolder:GetDescendants()) do
+                        if prompt:IsA("ProximityPrompt") and prompt.Name == "{}" then
+                            originalParents[prompt] = prompt.Parent
+                            prompt.ActionText = ""
+                            prompt.ObjectText = ""
+                            prompt.UIOffset = Vector2.new(100000, 100000)
+                            prompt.Exclusivity = Enum.ProximityPromptExclusivity.AlwaysShow
+                            prompt.MaxActivationDistance = 50
+                            prompt.RequiresLineOfSight = false
+                            prompt.KeyboardKeyCode = Enum.KeyCode.U
+                            prompt.Parent = char
+                        end
+                    end
+                end
+            else
+                for prompt, parent in pairs(originalParents) do
+                    if prompt and parent then
+                        prompt.Parent = parent
+                    end
+                end
+                originalParents = {}
+            end
+        end)
+
+        task.spawn(function()
+            while MinningV3 do
+                local player = game.Players.LocalPlayer
+                local char = player and player.Character
+                if char then
+                    for _, prompt in pairs(char:GetChildren()) do
+                        if prompt:IsA("ProximityPrompt") and prompt.Name == "{}" then
+                            prompt:InputHoldBegin()
+                            task.wait(prompt.HoldDuration)
+                            prompt:InputHoldEnd()
                         end
                     end
                 end
