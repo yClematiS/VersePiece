@@ -1757,7 +1757,7 @@ local MinningV3Toggle = SecTap:CreateToggle({
                             prompt.ObjectText = ""
                             prompt.UIOffset = Vector2.new(100000, 100000)
                             prompt.Exclusivity = Enum.ProximityPromptExclusivity.AlwaysShow
-                            prompt.MaxActivationDistance = 50
+                            prompt.MaxActivationDistance = 9999999
                             prompt.RequiresLineOfSight = false
                             prompt.KeyboardKeyCode = Enum.KeyCode.U
                             prompt.Parent = char
@@ -1768,6 +1768,9 @@ local MinningV3Toggle = SecTap:CreateToggle({
                 for prompt, parent in pairs(originalParents) do
                     if prompt and parent then
                         prompt.Parent = parent
+                        prompt.ActionText = "Join | Clematis"
+                        prompt.ObjectText = "Discord: Seaweed_hunter"
+                        prompt.UIOffset = Vector2.new(1, 1)
                     end
                 end
                 originalParents = {}
